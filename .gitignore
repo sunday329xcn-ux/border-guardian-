@@ -1,0 +1,42 @@
+# ===== Unity / Tuanjie =====
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# IDE
+.vs/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Cursor local cache (keep project rules)
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# Optional local tool config
+.com-unity-codely.json
+.codely-cli/
+**/node_modules/

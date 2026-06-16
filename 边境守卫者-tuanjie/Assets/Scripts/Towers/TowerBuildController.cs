@@ -29,6 +29,9 @@ public class TowerBuildController : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
             return;
 
+        if (GamePauseController.Instance != null && GamePauseController.Instance.IsPaused)
+            return;
+
         if (ignoreUiClicks && IsPointerOverUi())
             return;
 
@@ -40,7 +43,18 @@ public class TowerBuildController : MonoBehaviour
         if (TryHandleRallyPlacement(worldPoint))
             return;
 
+        if (TryHandleEnvironmentClick(worldPoint))
+            return;
+
         HandleWorldClick(worldPoint);
+    }
+
+    bool TryHandleEnvironmentClick(Vector3 worldPoint)
+    {
+        if (mapGridController?.Environment == null)
+            return false;
+
+        return mapGridController.Environment.TryHandleClick(worldPoint);
     }
 
     bool TryHandleRallyPlacement(Vector3 worldPoint)

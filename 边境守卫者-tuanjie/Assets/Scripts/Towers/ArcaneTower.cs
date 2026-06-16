@@ -39,7 +39,8 @@ public class ArcaneTower : CombatTowerBase
                 minDamage = 27; maxDamage = 36; attackInterval = 0.8f; range = 3.5f; armorPenetration = 45f; armorStealPerHit = 2;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 36; maxDamage = 48; attackInterval = 0.75f; range = 3.5f; armorPenetration = 45f; armorStealPerHit = 2;
+                minDamage = 36; maxDamage = 48; attackInterval = 0.75f; range = 3.5f; armorPenetration = 45f;
+                armorStealPerHit = 2; destroyerAllyBonus = 2;
                 break;
             case 5 when branch == TowerBranch.BranchB:
                 minDamage = 15; maxDamage = 22; attackInterval = 1.2f; range = 3.5f;
@@ -55,6 +56,7 @@ public class ArcaneTower : CombatTowerBase
         critChance = armorPenetration = splashRadius = stunDuration = groundZoneRadius = groundZoneDuration = groundZoneSlow = groundZoneDps = pierceArmorBonus = freezeChance = freezeDuration = 0f;
         splashMaxTargets = 1; prioritizeLowestHealth = prioritizeHighestHealth = pierceLine = false; armorStealPerHit = 0;
         voidPulseCooldown = 8f; voidPulseTimer = 0f;
+        ConfigureSynergyDefaults();
     }
 
     protected override int GetUpgradeGoldCost(int targetLevel) => targetLevel switch { 2 => 110, 3 => 150, _ => 0 };

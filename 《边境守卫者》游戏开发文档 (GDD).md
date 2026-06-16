@@ -1,8 +1,8 @@
 # 《边境守卫者》游戏开发文档 (GDD)
 
-**版本：** 0.3  
-**日期：** 2026-06-10  
-**作者：** [你的名字]  
+**版本：** 0.8  
+**日期：** 2026-06-16  
+**作者：** Sunday
 **游戏类型：** 策略塔防  
 **参考作品：** 《Kingdom Rush》《保卫萝卜》  
 **引擎 / 工程：** Tuanjie Editor 1.9.1 · 项目目录 `边境守卫者-tuanjie/`
@@ -13,7 +13,12 @@
 
 | 版本 | 日期 | 摘要 |
 | :--- | :--- | :--- |
-| 0.3 | 2026-06-10 | 同步当前可玩原型：6 塔 Lv.1–5 与分支、10 敌人特殊行为、10 波、双出生点+汇合+分叉地图、21 高台、兵营 Rally、英文 UI、炮塔耐久与拆塔机制 |
+| 0.8 | 2026-06-16 | 塔/敌人图鉴 Codex 菜单：晋升路线、属性、能力概览 |
+| 0.7 | 2026-06-09 | P3 塔协同标签 + Lv.5 分支补全（眩晕/拆甲/Destroyer 传甲/Void 双模式） |
+| 0.6 | 2026-06-01 | P2 三星评价 + 钥匙：`PlayerPrefs` 持久化；胜利面板；3 钥匙解锁熔岩裂谷（占位） |
+| 0.5 | 2026-05-20 | P1 战斗反馈：精英/BOSS 出场横幅、优先目标大血条、Tower under attack 提示；龙 Phase 2 演出 |
+| 0.4 | 2026-05-12 | P0 可玩性：波次情报面板；环境机制（古树 50 金 / 猎人陷阱玩家放置 50 金·CD 60s） |
+| 0.3 | 2026-04-10 | 同步当前可玩原型：6 塔 Lv.1–5 与分支、10 敌人特殊行为、10 波、双出生点+汇合+分叉地图、21 高台、兵营 Rally、英文 UI、炮塔耐久与拆塔机制 |
 | 0.2 | 2026-03-18 | 初版完整设计：五种炮塔五级分支、十种敌人、格林姆森林/熔岩裂谷、钻石经济 |
 | 0.1 | — | 概念与核心循环 |
 
@@ -43,13 +48,16 @@
   - 点击已建塔 → 左下信息面板升级 / 出售 / 选分支
   - 兵营 → **Rally** → 在号召范围内点击地图调动士兵
   - 右上角 **Call Early (+gold)** 提前开波并获得金币奖励
+  - **Pause / Esc** 暂停或继续游戏
+  - 精英/BOSS 出场时顶部横幅 + 大血条；炮塔受击时 **Tower under attack!** 提示
+  - 左上角 **Codex** 打开塔/敌人图鉴（自动暂停，Close 恢复）
 - **界面语言：** 游戏内 UI 为**英文**；本 GDD 为中文设计说明。
 
 ### 1.4 核心循环
 
 ```
 开始关卡 → 15 秒备波（可 Call Early）→ 双入口交替出怪 → 击杀获金/钻 →
-升级塔（金 Lv.2–3，钻 Lv.4–5 分支）→ 应对精英/BOSS → 10 波全胜 → Victory
+升级塔（金 Lv.2–3，钻 Lv.4–5 分支）→ 应对精英/BOSS → 10 波全胜 → Victory → 评星获钥匙 → 解锁下一地图
 ```
 
 ---
@@ -64,6 +72,29 @@
 - **金币：** 起始 200；击杀掉落；每波结束额外 `波次×5` 金。
 - **钻石：** 矿场 0.1 钻/秒；精英 1–2 钻、BOSS 8 钻；第 4 波起每波结束 +1 钻。
 - **波次：** 共 10 波；备波 **15 秒** 后自动开波；**Call Early** 获得 `10 + 波次×2` 金并立即开波（无钻石奖励）。
+- **波次情报（已实现）：** 备波阶段顶部 **Incoming Wave** 面板显示下一波敌人摘要与英文战术提示。
+- **暂停（已实现）：** 点击 **Pause** 或按 **Esc**；暂停时冻结战斗、波次与备波倒计时；Game Over / Victory 时不可暂停并自动恢复时间流速。
+- **三星评价（已实现）：** 通关时按剩余生命评星；每获得**新**星级 +1 钥匙（累计最佳，可重复挑战刷星）。
+- **钥匙解锁（已实现）：** 累计 **3 钥匙** 解锁地图二「熔岩裂谷」（场景尚未开发，胜利面板显示 Coming soon）。
+
+| 星级 | 条件（20 生命起始） |
+| :--- | :--- |
+| ★ | 通关（生命 ≥ 1） |
+| ★★ | 剩余生命 ≥ 10 |
+| ★★★ | 剩余生命 ≥ 18 |
+
+- **HUD：** 左上角显示 `Keys: X · Best ★★☆`（当前关卡历史最佳）。
+- **塔协同标签（已实现）：** 五战斗塔各有元素 Tag；**2.8 格内**邻塔触发协同；选中塔时在信息面板显示 Tag 与激活协同。
+
+| Tag | 塔 | 协同组合 | 效果 |
+| :--- | :--- | :--- | :--- |
+| Marksman | Arrow | + Ice | Volley：对**减速**敌人 +25% 伤害 |
+| Ice | Frost | + Explosive | Shatter：Cannon 对**减速**敌人 +30% 伤害 |
+| Explosive | Cannon | + Arcane | Breach：Cannon 命中 -10 MR 4s；Arcane 对 MR 削弱目标 +15% |
+| Arcane | Arcane | + Guardian | Ward：每个邻 Barracks +4 Arcane 伤害；每个邻 Arcane 士兵 +4 护甲 |
+| Guardian | Barracks | （见 Ward） | |
+
+- **Lv.5 分支补全（已实现）：** Cannon Lv.2+ **眩晕**；Thunder **减护甲**；Destroyer **偷甲并 buff 邻塔**；Void Rift **普攻 + 虚空脉冲**。
 
 ### 2.2 炮塔建造与升级
 
@@ -81,6 +112,17 @@
 | Lv.5 | 4.0 |
 
 流程：选中兵营 → **Rally** → 在蓝色范围内点击 → 士兵移动至该点并驻守。
+
+### 2.4 环境互动（格林姆森林）— 已实现
+
+| 机制 | 操作 | 效果 | 限制 |
+| :--- | :--- | :--- | :--- |
+| **古树缠绕** | 点击地图上方绿色古树 | 消耗 **50 金**；在对应路段生成树根区域，敌人 **减速 80%**，持续 **4 秒** | 每棵树独立 **CD 60 秒**；冷却中树变灰 |
+| **猎人陷阱** | 点击路径上**指定陷阱格**（橙色标记） | 消耗 **50 金** 放置；首个经过的敌人 **100 真伤 + 定身 5 秒** | 同时仅 **1 个** 陷阱；触发后 **CD 60 秒** |
+
+- 左树 `(4,10)` 作用于上路 `(5,9)` 附近；右树 `(12,10)` 作用于分叉 `(10,7)` 附近。
+- 陷阱可放置格：`(8,6)` 汇合段、`(10,7)` 上分叉、`(10,5)` 下分叉；**高亮**表示可放置，**变灰**表示冷却中。
+- 环境点击优先于造塔/选塔（与 Rally 类似，通过 `TowerBuildController` 转发）。
 
 ---
 
@@ -215,7 +257,7 @@
 - **出生点：** 2 个（上 `(0,9)`、下 `(0,3)`，蓝色标记）
 - **终点：** 1 个（`(15,6)`，红色标记）
 - **建造点：** **21 个高台**，道路两侧分布（无空地建造位）
-- **环境机制：** ⏳ 未实现（古树缠绕、猎人陷阱仍为设计目标）
+- **环境机制（已实现）：** 2 棵古树（点击缠绕）+ 1 处猎人陷阱（ `(8,6)` 单次触发）
 
 **波次设计（共 10 波，已实现）：**
 
@@ -251,20 +293,22 @@
 
 - **引擎：** Tuanjie 1.9.1（Unity 中国版 fork）
 - **地图：** `MapGridController` + `GrimmForestMapLayout` 网格与 Waypoint；4 条路线（2 出生 × 2 分叉）
-- **塔：** `TowerBase` → `CombatTowerBase` / `BarracksTower` / `DiamondMineTower`；`TowerFactory` 建造
+- **塔：** `TowerBase` → `CombatTowerBase` / `BarracksTower` / `DiamondMineTower`；`TowerSynergyService` 邻塔协同
 - **敌人：** `EnemyBase` + `EnemyBehaviors` 组件；`WaveManager` + `GrimmForestWaves`
-- **UI：** 运行时生成（`GameUiController`、`TowerInfoPanelUI`、`GameHUD`）；英文文案
-- **待办：** ScriptableObject 数据驱动、环境机制、地图二、星级与钥匙
+- **UI：** 运行时生成（`GameUiController`、`TowerInfoPanelUI`、`GameHUD`、`CombatPresentationUI`、`VictoryResultUI`、`CodexMenuUI`）；英文文案；**Wave Intel 面板**；**Codex 图鉴**
+- **环境：** `MapEnvironmentController`、`AncientTree`、`HunterTrap`、`RootEntangleZone`
+- **进度：** `LevelProgressService` + `PlayerPrefs`（最佳星级、总钥匙数）
+- **待办：** ScriptableObject 数据驱动、地图二场景
 
 **主要脚本目录：**
 
 ```
 边境守卫者-tuanjie/Assets/Scripts/
-  Core/      GameManager, DamageCalculator, GameDebugInput
-  Maps/      MapGridController, GrimmForestMapLayout, BuildSlot
-  Eneimes/   EnemyBase, WaveManager, GrimmForestWaves, EnemyBehaviors
-  Towers/    各塔类型, TowerBuildController, TowerInfoPanelUI
-  UI/        GameHUD, GameUiController
+  Core/      GameManager, LevelProgressService, DamageCalculator, GameDebugInput
+  Maps/      MapGridController, GrimmForestMapLayout, MapEnvironmentController, AncientTree, HunterTrap
+  Eneimes/   EnemyBase, WaveManager, GrimmForestWaves, WavePreviewHelper, EnemyBehaviors
+  Towers/    各塔类型, TowerSynergyService, TowerBuildController, TowerInfoPanelUI
+  UI/        GameHUD, GameUiController, CodexMenuUI, GameCodexCatalog, CombatPresentationUI, VictoryResultUI, LevelProgressHudUI, PauseMenuUI
 ```
 
 ---
@@ -275,23 +319,31 @@
 | :--- | :---: | :--- |
 | 核心资源（金/钻/生命） | ✅ | GameManager |
 | 6 建筑建造 | ✅ | 含 Mine |
-| 5 塔 Lv.1–5 + 分支 | ✅ | 部分 Lv.5 特效为简化实现 |
+| 5 塔 Lv.1–5 + 分支 | ✅ | Lv.5 关键特效已补全；部分数值仍为简化 |
+| 塔/敌人图鉴 Codex | ✅ | Towers / Enemies 分页；Lv.1–5 与分支、敌人属性能力 |
+| 塔协同 Tag | ✅ | 4 组邻塔协同；面板显示 Tag / Synergy |
 | 兵营 Rally | ✅ | 三级号召半径 |
 | 10 敌人 + 特殊行为 | ✅ | 见 4.2 |
 | 10 波 + Call Early | ✅ | 15s 备波 |
 | 双出生 + 分叉地图 | ✅ | 21 高台 |
 | 英文 HUD / 建造栏 / 塔面板 | ✅ | |
 | Victory / Game Over 居中 | ✅ | |
-| 环境机制（古树/陷阱） | ⏳ | |
+| 波次情报面板 | ✅ | 备波阶段 Incoming + hint |
+| 暂停 / 继续 | ✅ | Pause 按钮 + Esc |
+| 环境机制（古树/陷阱） | ✅ | 见 2.4 |
 | 地图二 熔岩裂谷 | ⏳ | |
-| 星级 / 钥匙 / 敌人预告 | ⏳ | |
+| 星级 / 钥匙 | ✅ | 三星评星；新星 +1 钥匙；3 钥匙解锁熔岩裂谷（占位） |
+| Victory 评星面板 | ✅ | 星级、钥匙、解锁进度、Continue / Replay |
+| Boss 演出 / 大血条 | ✅ | 精英/BOSS 横幅 + 顶部 HP 条；龙 Phase 2 提示 |
+| Tower under attack | ✅ | 拆塔魔像 / 自爆 / 龙火球等炮塔受伤时顶部红条 |
 | ScriptableObject 配置 | ⏳ | 现为 C# 静态配置 |
 
 ---
 
 ## 九、后续版本规划（草案）
 
-- **0.4：** 格林姆森林环境机制（古树、陷阱）
-- **0.5：** 敌人预告 UI、波次间塔升级引导
-- **0.6：** 地图二原型
+- **0.5（P1）：** ✅ Boss/精英演出、大血条、Tower under attack 提示
+- **0.6（P2）：** ✅ 三星评价 + 钥匙解锁
+- **0.7（P3）：** ✅ 塔协同标签、Lv.5 分支特效补全
+- **0.8：** 地图二原型
 - **1.0：** 双地图可玩 Demo，数值平衡一轮

@@ -299,6 +299,7 @@ public class AncientDragonBehavior : EnemyBehaviorBase
         phaseTwo = true;
         enemy.SetFlying(false);
         enemy.AddArmor(Phase2ArmorBonus);
+        enemy.RaisePresentation("Phase 2 · Dragon lands!");
     }
 
     void UpdatePhaseOne()

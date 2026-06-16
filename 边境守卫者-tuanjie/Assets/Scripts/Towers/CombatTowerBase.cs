@@ -25,6 +25,16 @@ public abstract class CombatTowerBase : TowerBase
     protected float voidPulseCooldown;
     protected float voidPulseTimer;
 
+    protected float thunderArmorShred;
+    protected int destroyerAllyBonus;
+    protected int wardDamagePerBarracks;
+    protected int wardArmorPerArcane;
+    protected float breachMagicResistShred;
+    protected float breachMagicResistDuration;
+    protected float breachArcaneBonus;
+    protected float shatterBonus;
+    protected float volleyBonus;
+
     float attackCooldown;
 
     protected override void Update()
@@ -151,6 +161,7 @@ public abstract class CombatTowerBase : TowerBase
 
         if (level >= 5 && branch == TowerBranch.BranchB && TowerType == TowerType.Arcane)
         {
+            DealSingleShot(target);
             TriggerVoidPulse();
             return;
         }
@@ -181,7 +192,9 @@ public abstract class CombatTowerBase : TowerBase
             if (enemy.Armor > 0)
                 damage = Mathf.RoundToInt(damage * (1f + pierceArmorBonus));
 
+            damage = ApplyOutgoingDamageSynergies(damage, enemy);
             enemy.TakeDamage(damage, DamageType.Physical, armorPenetration);
+            ApplyOnHitEffects(enemy);
         }
     }
 
@@ -229,6 +242,8 @@ public abstract class CombatTowerBase : TowerBase
         if (critChance > 0f && Random.value < critChance)
             damage *= 2;
 
+        damage = ApplyOutgoingDamageSynergies(damage, target);
+
         if (freezeChance > 0f && Random.value < freezeChance)
         {
             var slow = target.GetComponent<EnemySlowEffect>();
@@ -238,19 +253,107 @@ public abstract class CombatTowerBase : TowerBase
 
         target.TakeDamage(damage, damageType, armorPenetration);
 
+        if (stunDuration > 0f)
+            target.ApplyStun(stunDuration);
+
         if (armorStealPerHit > 0)
         {
             stackedBonusDamage += armorStealPerHit;
             stackedBonusExpireTime = Time.time + 5f;
             target.ReduceArmor(armorStealPerHit);
+            ShareDestroyerBonus();
         }
 
+        ApplyOnHitEffects(target);
         ApplySlowFromTower(target);
+    }
+
+    void ShareDestroyerBonus()
+    {
+        if (destroyerAllyBonus <= 0)
+            return;
+
+        foreach (var tower in TowerRegistry.ActiveTowers)
+        {
+            if (tower == null || tower == this || tower is not CombatTowerBase combatAlly)
+                continue;
+
+            if (Vector2.Distance(transform.position, combatAlly.transform.position) > TowerSynergyCatalog.DefaultRange)
+                continue;
+
+            combatAlly.AddTemporaryDamageBonus(destroyerAllyBonus, 5f);
+        }
+    }
+
+    void ApplyOnHitEffects(EnemyBase target)
+    {
+        if (target == null || target.IsDead)
+            return;
+
+        if (thunderArmorShred > 0f)
+            target.ReduceArmor(Mathf.RoundToInt(thunderArmorShred));
+
+        if (breachMagicResistShred > 0f &&
+            TowerSynergyService.HasPartner(this, TowerType.Arcane, TowerSynergyCatalog.DefaultRange))
+        {
+            target.ApplyMagicResistReduction(
+                Mathf.RoundToInt(breachMagicResistShred),
+                breachMagicResistDuration);
+        }
+    }
+
+    int ApplyOutgoingDamageSynergies(int damage, EnemyBase target)
+    {
+        if (target == null)
+            return damage;
+
+        if (TowerType == TowerType.Cannon &&
+            shatterBonus > 0f &&
+            target.IsSlowed() &&
+            TowerSynergyService.HasPartner(this, TowerType.Frost, TowerSynergyCatalog.DefaultRange))
+        {
+            damage = Mathf.RoundToInt(damage * (1f + shatterBonus));
+        }
+
+        if (TowerType == TowerType.Arrow &&
+            volleyBonus > 0f &&
+            target.IsSlowed() &&
+            TowerSynergyService.HasPartner(this, TowerType.Frost, TowerSynergyCatalog.DefaultRange))
+        {
+            damage = Mathf.RoundToInt(damage * (1f + volleyBonus));
+        }
+
+        if (TowerType == TowerType.Arcane &&
+            breachArcaneBonus > 0f &&
+            target.HasReducedMagicResist() &&
+            TowerSynergyService.HasPartner(this, TowerType.Cannon, TowerSynergyCatalog.DefaultRange))
+        {
+            damage = Mathf.RoundToInt(damage * (1f + breachArcaneBonus));
+        }
+
+        return damage;
+    }
+
+    public void AddTemporaryDamageBonus(int amount, float duration)
+    {
+        if (amount <= 0 || duration <= 0f)
+            return;
+
+        stackedBonusDamage += amount;
+        stackedBonusExpireTime = Mathf.Max(stackedBonusExpireTime, Time.time + duration);
     }
 
     int RollDamage()
     {
-        return Random.Range(minDamage, maxDamage + 1);
+        var damage = Random.Range(minDamage, maxDamage + 1);
+
+        if (TowerType == TowerType.Arcane && wardDamagePerBarracks > 0)
+        {
+            damage += wardDamagePerBarracks *
+                      TowerSynergyService.CountNearby(this, TowerType.Barracks, TowerSynergyCatalog.DefaultRange);
+        }
+
+        return damage;
     }
 
     DamageType GetDamageType()
@@ -295,7 +398,21 @@ public abstract class CombatTowerBase : TowerBase
 
             var toCenter = transform.position - enemy.transform.position;
             enemy.transform.position += toCenter.normalized * 0.35f;
-            enemy.TakeDamage(12, DamageType.True);
+            var pulseDamage = ApplyOutgoingDamageSynergies(12, enemy);
+            enemy.TakeDamage(pulseDamage, DamageType.True);
         }
+    }
+
+    protected void ConfigureSynergyDefaults()
+    {
+        shatterBonus = 0.3f;
+        volleyBonus = 0.25f;
+        wardDamagePerBarracks = 4;
+        wardArmorPerArcane = 4;
+        breachMagicResistShred = 10f;
+        breachMagicResistDuration = 4f;
+        breachArcaneBonus = 0.15f;
+        destroyerAllyBonus = 0;
+        thunderArmorShred = 0f;
     }
 }

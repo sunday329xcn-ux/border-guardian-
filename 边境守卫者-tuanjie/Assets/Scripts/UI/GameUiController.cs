@@ -18,8 +18,13 @@ public class GameUiController : MonoBehaviour
 
     TextMeshProUGUI waveTitleText;
     TextMeshProUGUI waveDetailText;
+    TextMeshProUGUI waveIntelTitleText;
+    TextMeshProUGUI waveIntelEnemyText;
+    TextMeshProUGUI waveIntelHintText;
+    GameObject waveIntelPanel;
     Button callEarlyButton;
     readonly Dictionary<TowerType, Image> towerButtonImages = new();
+    GamePauseController boundPauseController;
 
     static readonly TowerType[] TowerOrder =
     {
@@ -43,9 +48,27 @@ public class GameUiController : MonoBehaviour
 
         CreateBuildPanel();
         CreateWavePanel();
+        CreateWaveIntelPanel();
+
+        if (GetComponent<PauseMenuUI>() == null)
+            gameObject.AddComponent<PauseMenuUI>();
+
+        if (GetComponent<CombatPresentationUI>() == null)
+            gameObject.AddComponent<CombatPresentationUI>();
+
+        if (GetComponent<VictoryResultUI>() == null)
+            gameObject.AddComponent<VictoryResultUI>();
+
+        if (GetComponent<LevelProgressHudUI>() == null)
+            gameObject.AddComponent<LevelProgressHudUI>();
+
+        if (GetComponent<CodexMenuUI>() == null)
+            gameObject.AddComponent<CodexMenuUI>();
 
         if (waveManager != null)
             waveManager.OnWaveStateChanged += RefreshWaveUi;
+
+        TryBindPauseEvents();
 
         if (buildSelector != null)
         {
@@ -60,11 +83,36 @@ public class GameUiController : MonoBehaviour
     {
         if (waveManager != null)
             waveManager.OnWaveStateChanged -= RefreshWaveUi;
+
+        if (boundPauseController != null)
+            boundPauseController.OnPauseChanged -= HandlePauseChanged;
+    }
+
+    void TryBindPauseEvents()
+    {
+        if (boundPauseController != null)
+            return;
+
+        if (GamePauseController.Instance == null)
+            return;
+
+        boundPauseController = GamePauseController.Instance;
+        boundPauseController.OnPauseChanged += HandlePauseChanged;
+    }
+
+    void HandlePauseChanged(bool paused)
+    {
+        RefreshWaveUi();
     }
 
     void Update()
     {
+        TryBindPauseEvents();
+
         if (waveManager != null && waveManager.State == WaveState.Preparation)
+            RefreshWaveUi();
+
+        if (GamePauseController.Instance != null && GamePauseController.Instance.IsPaused)
             RefreshWaveUi();
     }
 
@@ -147,6 +195,41 @@ public class GameUiController : MonoBehaviour
         ConfigureLayoutElement(callEarlyButton.GetComponent<RectTransform>(), 40f);
     }
 
+    void CreateWaveIntelPanel()
+    {
+        waveIntelPanel = CreateUiObject("WaveIntelPanel", transform);
+        var panelRect = waveIntelPanel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.5f, 1f);
+        panelRect.anchorMax = new Vector2(0.5f, 1f);
+        panelRect.pivot = new Vector2(0.5f, 1f);
+        panelRect.sizeDelta = new Vector2(520f, 118f);
+        panelRect.anchoredPosition = new Vector2(0f, -ScreenPadding);
+        UiDisplaySettings.SnapRectToPixels(panelRect);
+
+        var background = waveIntelPanel.AddComponent<Image>();
+        UiDisplaySettings.ApplyPanelBackground(background, 0.9f);
+
+        waveIntelTitleText = CreateLabel(waveIntelPanel.transform, "Incoming Wave", 20f, TextAlignmentOptions.TopLeft);
+        LayoutIntelLine(waveIntelTitleText.rectTransform, -12f, 24f);
+
+        waveIntelEnemyText = CreateLabel(waveIntelPanel.transform, string.Empty, 18f, TextAlignmentOptions.TopLeft);
+        waveIntelEnemyText.color = new Color(0.95f, 0.92f, 0.75f);
+        LayoutIntelLine(waveIntelEnemyText.rectTransform, -38f, 28f);
+
+        waveIntelHintText = CreateLabel(waveIntelPanel.transform, string.Empty, 16f, TextAlignmentOptions.TopLeft);
+        waveIntelHintText.color = new Color(0.75f, 0.9f, 0.78f);
+        LayoutIntelLine(waveIntelHintText.rectTransform, -70f, 36f);
+    }
+
+    static void LayoutIntelLine(RectTransform rect, float y, float height)
+    {
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(16f, y);
+        rect.sizeDelta = new Vector2(-32f, height);
+    }
+
     void RefreshWaveUi()
     {
         if (waveManager == null)
@@ -156,11 +239,39 @@ public class GameUiController : MonoBehaviour
             waveTitleText.text = waveManager.GetWaveCounterText();
 
         if (waveDetailText != null)
-            waveDetailText.text = waveManager.GetWaveDetailText();
+        {
+            waveDetailText.text = GamePauseController.Instance != null && GamePauseController.Instance.IsPaused
+                ? "Paused"
+                : waveManager.GetWaveDetailText();
+        }
 
         if (callEarlyButton != null)
             callEarlyButton.interactable = waveManager.State == WaveState.Preparation
-                                           && waveManager.PreparationTimeLeft > 0.5f;
+                                           && waveManager.PreparationTimeLeft > 0.5f
+                                           && (GamePauseController.Instance == null || !GamePauseController.Instance.IsPaused);
+
+        RefreshWaveIntelPanel();
+    }
+
+    void RefreshWaveIntelPanel()
+    {
+        if (waveIntelPanel == null || waveManager == null)
+            return;
+
+        var showIntel = waveManager.State == WaveState.Preparation && waveManager.UpcomingWaveDefinition != null;
+        waveIntelPanel.SetActive(showIntel);
+
+        if (!showIntel)
+            return;
+
+        if (waveIntelTitleText != null)
+            waveIntelTitleText.text = $"Incoming · Wave {waveManager.CurrentWaveNumber}";
+
+        if (waveIntelEnemyText != null)
+            waveIntelEnemyText.text = waveManager.GetUpcomingEnemySummary();
+
+        if (waveIntelHintText != null)
+            waveIntelHintText.text = waveManager.GetUpcomingHint();
     }
 
     void RefreshTowerButtons()

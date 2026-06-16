@@ -71,6 +71,25 @@ public static class GrimmForestMapLayout
 
     public static int BuildSlotCount => BuildPlatformCells.Length;
 
+    public static readonly Vector2Int[] AncientTreeCells =
+    {
+        new(4, 10),
+        new(12, 10)
+    };
+
+    public static readonly Vector2Int[] AncientTreeEffectCells =
+    {
+        new(5, 9),
+        new(10, 7)
+    };
+
+    public static readonly Vector2Int[] HunterTrapPlacementCells =
+    {
+        new(8, 6),
+        new(10, 7),
+        new(10, 5)
+    };
+
     public static MapCellType[,] CreateCells()
     {
         var cells = new MapCellType[MapGridSettings.Width, MapGridSettings.Height];

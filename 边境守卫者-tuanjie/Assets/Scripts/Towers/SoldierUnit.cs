@@ -120,10 +120,19 @@ public class SoldierUnit : MonoBehaviour
         if (!IsAlive || amount <= 0)
             return;
 
-        var final = DamageCalculator.CalculatePhysicalDamage(amount, armor);
+        var final = DamageCalculator.CalculatePhysicalDamage(amount, GetEffectiveArmor());
         currentHealth -= final;
         if (currentHealth <= 0)
             Die();
+    }
+
+    int GetEffectiveArmor()
+    {
+        if (owner == null)
+            return armor;
+
+        var wardBonus = TowerSynergyService.CountNearby(owner, TowerType.Arcane, TowerSynergyCatalog.DefaultRange) * 4;
+        return armor + wardBonus;
     }
 
     void Die()

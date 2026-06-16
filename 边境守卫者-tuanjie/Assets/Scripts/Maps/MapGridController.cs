@@ -16,10 +16,12 @@ public class MapGridController : MonoBehaviour
     readonly List<BuildSlot> buildSlots = new();
     readonly WaypointPath[] spawnRoutes = new WaypointPath[4];
     MapCellType[,] cells;
+    MapEnvironmentController environmentController;
 
     public WaypointPath Path => spawnRoutes.Length > 0 ? spawnRoutes[0] : waypointPath;
     public IReadOnlyList<BuildSlot> BuildSlots => buildSlots;
     public MapCellType[,] Cells => cells;
+    public MapEnvironmentController Environment => environmentController;
 
     void Awake()
     {
@@ -29,6 +31,7 @@ public class MapGridController : MonoBehaviour
         BuildBuildSlots();
         BuildPath();
         BuildMarkers();
+        BuildEnvironment();
 
         if (autoSetupCamera)
             SetupCamera();
@@ -161,6 +164,15 @@ public class MapGridController : MonoBehaviour
     {
         foreach (var gridPoint in gridPoints)
             yield return MapGridSettings.GridToWorld(gridPoint.x, gridPoint.y);
+    }
+
+    void BuildEnvironment()
+    {
+        environmentController = GetComponent<MapEnvironmentController>();
+        if (environmentController == null)
+            environmentController = gameObject.AddComponent<MapEnvironmentController>();
+
+        environmentController.BuildEnvironment(transform);
     }
 
     void BuildMarkers()

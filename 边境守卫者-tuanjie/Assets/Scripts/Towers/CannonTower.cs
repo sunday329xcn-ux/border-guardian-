@@ -47,7 +47,7 @@ public class CannonTower : CombatTowerBase
                 break;
             case 5 when branch == TowerBranch.BranchB:
                 minDamage = 65; maxDamage = 90; attackInterval = 2.2f; range = 5.5f; splashRadius = 1.2f;
-                prioritizeHighestHealth = true; armorPenetration = 15f;
+                prioritizeHighestHealth = true; armorPenetration = 15f; thunderArmorShred = 8f;
                 break;
         }
 
@@ -58,6 +58,7 @@ public class CannonTower : CombatTowerBase
     {
         critChance = armorPenetration = splashRadius = stunDuration = groundZoneRadius = groundZoneDuration = groundZoneSlow = groundZoneDps = pierceArmorBonus = freezeChance = freezeDuration = 0f;
         splashMaxTargets = 1; prioritizeLowestHealth = prioritizeHighestHealth = pierceLine = false; armorStealPerHit = 0;
+        ConfigureSynergyDefaults();
     }
 
     protected override int GetUpgradeGoldCost(int targetLevel) => targetLevel switch { 2 => 120, 3 => 180, _ => 0 };

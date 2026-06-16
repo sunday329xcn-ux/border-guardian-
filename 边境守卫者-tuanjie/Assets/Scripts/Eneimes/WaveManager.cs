@@ -13,6 +13,7 @@ public enum WaveState
 public class WaveManager : MonoBehaviour
 {
     [SerializeField] MapGridController mapGridController;
+    [SerializeField] LevelId currentLevel = LevelId.GrimmForest;
     [SerializeField] int earlyStartBaseBonus = 10;
     [SerializeField] float preparationCountdown = 15f;
 
@@ -23,9 +24,12 @@ public class WaveManager : MonoBehaviour
     int totalWaves = GrimmForestWaves.TotalWaves;
 
     public WaveState State { get; private set; } = WaveState.Preparation;
+    public LevelId CurrentLevelId => currentLevel;
     public int CurrentWaveNumber => currentWaveIndex + 1;
     public int TotalWaves => totalWaves;
     public float PreparationTimeLeft => preparationTimer;
+    public WaveDefinition UpcomingWaveDefinition =>
+        currentWaveIndex >= totalWaves ? null : GrimmForestWaves.GetWave(currentWaveIndex + 1);
 
     public event Action OnWaveStateChanged;
 
@@ -149,9 +153,24 @@ public class WaveManager : MonoBehaviour
 
         if (currentWaveIndex >= totalWaves)
         {
+            if (GamePauseController.Instance != null)
+                GamePauseController.Instance.Resume();
+
             State = WaveState.Victory;
             OnWaveStateChanged?.Invoke();
 
+            ShowVictoryResult();
+            return;
+        }
+
+        BeginPreparation();
+    }
+
+    void ShowVictoryResult()
+    {
+        var gameManager = GameManager.Instance;
+        if (gameManager == null)
+        {
             var hud = FindObjectOfType<GameHUD>();
             if (hud != null)
                 hud.SetStatus("Victory!", true);
@@ -159,7 +178,21 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        BeginPreparation();
+        var result = LevelProgressService.RecordVictory(
+            currentLevel,
+            gameManager.Lives,
+            gameManager.StartingLives);
+
+        var victoryUi = FindObjectOfType<VictoryResultUI>();
+        if (victoryUi != null)
+        {
+            victoryUi.Show(result, gameManager.Lives, gameManager.StartingLives);
+            return;
+        }
+
+        var fallbackHud = FindObjectOfType<GameHUD>();
+        if (fallbackHud != null)
+            fallbackHud.SetStatus("Victory!", true);
     }
 
     public string GetStatusText()
@@ -184,5 +217,17 @@ public class WaveManager : MonoBehaviour
             WaveState.Victory => "All waves cleared",
             _ => string.Empty
         };
+    }
+
+    public string GetUpcomingEnemySummary()
+    {
+        var wave = UpcomingWaveDefinition;
+        return wave == null ? string.Empty : WavePreviewHelper.BuildEnemySummary(wave);
+    }
+
+    public string GetUpcomingHint()
+    {
+        var wave = UpcomingWaveDefinition;
+        return wave == null ? string.Empty : WavePreviewHelper.GetHint(wave);
     }
 }

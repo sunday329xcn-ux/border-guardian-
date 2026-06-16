@@ -49,7 +49,7 @@ public class PathFollower : MonoBehaviour
         var enemy = GetComponent<EnemyBase>();
         if (enemy != null)
         {
-            if (enemy.IsBlocked)
+            if (enemy.IsRooted || enemy.IsBlocked || enemy.IsStunned)
                 return;
 
             enemy.SetBlocked(false);

@@ -56,6 +56,7 @@ public class FrostTower : CombatTowerBase
     {
         critChance = armorPenetration = splashRadius = stunDuration = groundZoneRadius = groundZoneDuration = groundZoneSlow = groundZoneDps = pierceArmorBonus = freezeChance = freezeDuration = 0f;
         splashMaxTargets = 1; prioritizeLowestHealth = prioritizeHighestHealth = pierceLine = false; armorStealPerHit = 0;
+        ConfigureSynergyDefaults();
     }
 
     protected override int GetUpgradeGoldCost(int targetLevel) => targetLevel switch { 2 => 100, 3 => 150, _ => 0 };

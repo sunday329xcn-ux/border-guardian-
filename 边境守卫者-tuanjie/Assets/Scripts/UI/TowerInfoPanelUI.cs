@@ -23,6 +23,7 @@ public class TowerInfoPanelUI : MonoBehaviour
         HidePanel();
 
         TowerSelectionController.OnSelectionChanged += HandleSelectionChanged;
+        TowerBase.OnTowerDamaged += HandleTowerDamaged;
 
         if (GameManager.Instance != null)
             GameManager.Instance.OnResourcesChanged += RefreshPanel;
@@ -31,9 +32,16 @@ public class TowerInfoPanelUI : MonoBehaviour
     void OnDestroy()
     {
         TowerSelectionController.OnSelectionChanged -= HandleSelectionChanged;
+        TowerBase.OnTowerDamaged -= HandleTowerDamaged;
 
         if (GameManager.Instance != null)
             GameManager.Instance.OnResourcesChanged -= RefreshPanel;
+    }
+
+    void HandleTowerDamaged(TowerBase tower, int damage)
+    {
+        if (tower == TowerSelectionController.Selected)
+            RefreshPanel();
     }
 
     void HandleSelectionChanged(TowerBase tower)
@@ -57,7 +65,7 @@ public class TowerInfoPanelUI : MonoBehaviour
         if (tower == null || panelRoot == null)
             return;
 
-        titleText.text = $"{tower.GetDisplayName()}  Lv.{tower.Level}";
+        titleText.text = $"{tower.GetDisplayName()}  Lv.{tower.Level}  ·  HP {tower.CurrentTowerHealth}/{tower.MaxTowerHealth}";
 
         branchAButton.gameObject.SetActive(false);
         branchBButton.gameObject.SetActive(false);
@@ -74,28 +82,28 @@ public class TowerInfoPanelUI : MonoBehaviour
 
         if (tower is DiamondMineTower)
         {
-            detailText.text = "Produces 0.1 diamonds/sec. Cannot upgrade.";
+            detailText.text = AppendSynergy(tower, "Produces 0.1 diamonds/sec. Cannot upgrade.");
             upgradeButtonText.text = "No Upgrade";
             upgradeButton.interactable = false;
         }
         else if (nextKind == TowerUpgradeKind.Gold)
         {
             var cost = tower.GetUpgradeGoldCostForNextLevel();
-            detailText.text = $"Upgrade to Lv.{tower.Level + 1} with gold.";
+            detailText.text = AppendSynergy(tower, $"Upgrade to Lv.{tower.Level + 1} with gold.");
             upgradeButtonText.text = $"Upgrade ({cost}g)";
             upgradeButton.interactable = GameManager.Instance != null && GameManager.Instance.Gold >= cost;
         }
         else if (nextKind == TowerUpgradeKind.DiamondLevel4)
         {
             var cost = tower.GetUpgradeDiamondCostForNextLevel();
-            detailText.text = $"Breakthrough to Lv.4 costs diamonds.";
+            detailText.text = AppendSynergy(tower, "Breakthrough to Lv.4 costs diamonds.");
             upgradeButtonText.text = $"Upgrade ({cost} dia)";
             upgradeButton.interactable = GameManager.Instance != null && GameManager.Instance.Diamonds >= cost;
         }
         else if (nextKind == TowerUpgradeKind.DiamondLevel5Branch)
         {
             upgradeButton.gameObject.SetActive(false);
-            detailText.text = "Choose a Lv.5 branch:";
+            detailText.text = AppendSynergy(tower, "Choose a Lv.5 branch:");
             branchAButton.gameObject.SetActive(true);
             branchBButton.gameObject.SetActive(true);
 
@@ -111,15 +119,21 @@ public class TowerInfoPanelUI : MonoBehaviour
         else
         {
             var branchName = tower.GetBranchDisplayName();
-            detailText.text = string.IsNullOrEmpty(branchName)
+            var baseDetail = string.IsNullOrEmpty(branchName)
                 ? "Max level reached."
                 : $"Max level. Specialization: {branchName}";
+            detailText.text = AppendSynergy(tower, baseDetail);
             upgradeButtonText.text = "Max Level";
             upgradeButton.interactable = false;
         }
 
         sellButtonText.text = $"Sell (+{tower.GetSellRefund()}g)";
         sellButton.interactable = true;
+    }
+
+    static string AppendSynergy(TowerBase tower, string baseText)
+    {
+        return baseText + TowerSynergyService.BuildPanelSummary(tower);
     }
 
     void OnUpgradeClicked()
@@ -187,7 +201,7 @@ public class TowerInfoPanelUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0f, 0f);
         panelRect.anchorMax = new Vector2(0f, 0f);
         panelRect.pivot = new Vector2(0f, 0f);
-        panelRect.sizeDelta = new Vector2(400f, 228f);
+        panelRect.sizeDelta = new Vector2(400f, 268f);
         panelRect.anchoredPosition = new Vector2(24f, buildBarClearance);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
@@ -199,7 +213,7 @@ public class TowerInfoPanelUI : MonoBehaviour
 
         detailText = CreateLabel(panelRoot.transform, string.Empty, 17f, TextAlignmentOptions.TopLeft);
         detailText.color = new Color(0.88f, 0.92f, 0.88f);
-        LayoutTop(detailText.rectTransform, -56f, 52f);
+        LayoutTop(detailText.rectTransform, -56f, 92f);
 
         var upgradeObject = CreateButton(panelRoot.transform, "Upgrade", new Vector2(112f, 40f), 16f, OnUpgradeClicked);
         upgradeButton = upgradeObject.GetComponent<Button>();

@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class EnemyBase : MonoBehaviour
 {
+    public static event Action<EnemyBase> OnPriorityEnemySpawned;
+    public static event Action<EnemyBase, string> OnEnemyPresentation;
     [SerializeField] int maxHealth = 60;
     [SerializeField] int armor = 0;
     [SerializeField] int magicResist = 0;
@@ -21,9 +24,14 @@ public class EnemyBase : MonoBehaviour
     WaypointPath spawnPath;
     int currentHealth;
     int currentArmor;
+    int currentMagicResist;
+    int magicResistReduction;
+    float magicResistReductionEndTime;
+    float stunEndTime;
     bool isDead;
     bool isBlocked;
     bool isInvulnerable;
+    float rootEndTime;
 
     public EnemyType EnemyType { get; private set; }
     public WaypointPath SpawnPath => spawnPath;
@@ -39,6 +47,8 @@ public class EnemyBase : MonoBehaviour
     public bool IsBoss => isBoss;
     public bool IgnoresBarracksBlock => ignoresBarracksBlock;
     public bool IsInvulnerable => isInvulnerable;
+    public bool IsRooted => Time.time < rootEndTime;
+    public bool IsStunned => Time.time < stunEndTime;
     public float PathProgress => pathFollower != null ? pathFollower.PathProgress : 0f;
 
     public void SetBlocked(bool blocked)
@@ -66,7 +76,18 @@ public class EnemyBase : MonoBehaviour
         enemy.ApplyStats(stats);
         enemy.Initialize(path);
         EnemyCatalog.AttachBehavior(enemy, type);
+        if (stats.IsElite || stats.IsBoss)
+            OnPriorityEnemySpawned?.Invoke(enemy);
+
         return enemy;
+    }
+
+    public void RaisePresentation(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        OnEnemyPresentation?.Invoke(this, message);
     }
 
     void Awake()
@@ -91,6 +112,7 @@ public class EnemyBase : MonoBehaviour
         currentArmor = stats.Armor;
         armor = stats.Armor;
         magicResist = stats.MagicResist;
+        currentMagicResist = stats.MagicResist;
         isFlying = stats.IsFlying;
         moveSpeed = stats.MoveSpeed;
         goldReward = stats.GoldReward;
@@ -139,12 +161,64 @@ public class EnemyBase : MonoBehaviour
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
     }
 
+    public void ApplyRoot(float duration)
+    {
+        if (isDead || duration <= 0f)
+            return;
+
+        rootEndTime = Mathf.Max(rootEndTime, Time.time + duration);
+    }
+
     public void AddArmor(int amount)
     {
         if (amount <= 0)
             return;
 
         currentArmor += amount;
+    }
+
+    public void ApplyStun(float duration)
+    {
+        if (isDead || duration <= 0f)
+            return;
+
+        stunEndTime = Mathf.Max(stunEndTime, Time.time + duration);
+    }
+
+    public void ApplyMagicResistReduction(int amount, float duration)
+    {
+        if (isDead || amount <= 0 || duration <= 0f)
+            return;
+
+        magicResistReduction = Mathf.Max(magicResistReduction, amount);
+        magicResistReductionEndTime = Mathf.Max(magicResistReductionEndTime, Time.time + duration);
+    }
+
+    public bool IsSlowed()
+    {
+        var slow = GetComponent<EnemySlowEffect>();
+        return slow != null && slow.SpeedMultiplier < 0.99f;
+    }
+
+    public bool HasReducedMagicResist()
+    {
+        RefreshMagicResistReduction();
+        return magicResistReduction > 0;
+    }
+
+    public int GetEffectiveMagicResist()
+    {
+        RefreshMagicResistReduction();
+        return Mathf.Max(0, currentMagicResist - magicResistReduction);
+    }
+
+    void RefreshMagicResistReduction()
+    {
+        if (Time.time < magicResistReductionEndTime)
+            return;
+
+        magicResistReduction = 0;
+        magicResistReductionEndTime = 0f;
     }
 
     public void TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f)
@@ -156,7 +230,7 @@ public class EnemyBase : MonoBehaviour
         var finalDamage = damageType switch
         {
             DamageType.Physical => DamageCalculator.CalculatePhysicalDamage(baseDamage, effectiveArmor),
-            DamageType.Magic => DamageCalculator.CalculateMagicDamage(baseDamage, magicResist),
+            DamageType.Magic => DamageCalculator.CalculateMagicDamage(baseDamage, GetEffectiveMagicResist()),
             DamageType.True => baseDamage,
             _ => baseDamage
         };

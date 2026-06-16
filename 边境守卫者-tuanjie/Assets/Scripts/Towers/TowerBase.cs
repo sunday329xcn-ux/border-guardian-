@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
 public abstract class TowerBase : MonoBehaviour
 {
+    public static event Action<TowerBase, int> OnTowerDamaged;
     public const int MaxLevel = 5;
 
     [SerializeField] protected float range = 3.5f;
@@ -68,6 +70,8 @@ public abstract class TowerBase : MonoBehaviour
             return;
 
         currentTowerHealth -= amount;
+        OnTowerDamaged?.Invoke(this, amount);
+
         if (currentTowerHealth > 0)
             return;
 

@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour
     public int Gold { get; private set; }
     public int Diamonds { get; private set; }
     public int Lives { get; private set; }
+    public int StartingLives => startingLives;
     public bool IsGameOver { get; private set; }
 
     public event Action OnResourcesChanged;
@@ -98,6 +99,15 @@ public class GameManager : MonoBehaviour
             OnGameOver?.Invoke();
             Debug.Log("Level failed: no lives remaining.");
         }
+    }
+
+    public void RestoreLives()
+    {
+        if (IsGameOver)
+            return;
+
+        Lives = startingLives;
+        NotifyChanged();
     }
 
     void NotifyChanged()

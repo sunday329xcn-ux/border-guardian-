@@ -14,21 +14,22 @@ public static class TowerVisualFactory
         return towerObject;
     }
 
-    public static bool TryPayAndOccupy(BuildSlot slot, int goldCost)
+    public static bool TryPayForBuild(BuildSlot slot, int goldCost)
     {
-        if (slot == null || slot.IsOccupied)
+        if (slot == null || !slot.CanAcceptBuild())
             return false;
 
         if (GameManager.Instance == null)
             return false;
 
-        if (!GameManager.Instance.TrySpendGold(goldCost))
-            return false;
+        return GameManager.Instance.TrySpendGold(goldCost);
+    }
 
-        if (slot.TryOccupy())
-            return true;
+    public static void RefundBuild(BuildSlot slot, int goldCost)
+    {
+        if (GameManager.Instance == null || goldCost <= 0)
+            return;
 
         GameManager.Instance.AddGold(goldCost);
-        return false;
     }
 }

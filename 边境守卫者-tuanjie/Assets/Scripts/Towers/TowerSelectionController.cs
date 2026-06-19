@@ -10,6 +10,12 @@ public static class TowerSelectionController
 
     public static void Select(TowerBase tower)
     {
+        if (tower == null)
+        {
+            Deselect();
+            return;
+        }
+
         if (selectedTower == tower)
             return;
 
@@ -19,14 +25,22 @@ public static class TowerSelectionController
         selectedTower = tower;
 
         if (selectedTower != null)
+        {
             selectedTower.SetSelectedVisual(true);
+            EnemySelectionController.Deselect();
+        }
 
         OnSelectionChanged?.Invoke(selectedTower);
     }
 
     public static void Deselect()
     {
-        Select(null);
+        if (selectedTower == null)
+            return;
+
+        selectedTower.SetSelectedVisual(false);
+        selectedTower = null;
+        OnSelectionChanged?.Invoke(null);
     }
 
     public static void DeselectIf(TowerBase tower)

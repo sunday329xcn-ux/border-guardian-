@@ -51,6 +51,9 @@ public class MapEnvironmentController : MonoBehaviour
 
     void Update()
     {
+        if (trapSlots == null)
+            return;
+
         if (trapCooldownRemaining > 0f)
             trapCooldownRemaining -= Time.deltaTime;
 
@@ -59,6 +62,8 @@ public class MapEnvironmentController : MonoBehaviour
 
     void RefreshTrapSlotVisuals()
     {
+        if (trapSlots == null)
+            return;
         var readyToPlace = CanPlaceTrap;
         var onCooldown = trapCooldownRemaining > 0f;
 
@@ -109,6 +114,9 @@ public class MapEnvironmentController : MonoBehaviour
 
     Vector2Int? FindTrapPlacementCell(Vector3 worldPoint)
     {
+        if (trapSlots == null)
+            return null;
+
         foreach (var slot in trapSlots)
         {
             if (slot == null)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum WaveState
 {
@@ -229,5 +230,40 @@ public class WaveManager : MonoBehaviour
     {
         var wave = UpcomingWaveDefinition;
         return wave == null ? string.Empty : WavePreviewHelper.GetHint(wave);
+    }
+
+    public bool WillUpcomingWaveUseSpawnLane(int spawnIndex)
+    {
+        var wave = UpcomingWaveDefinition;
+        return wave != null && WavePreviewHelper.UsesSpawnLane(wave, spawnIndex);
+    }
+
+    public string GetUpcomingEnemySummaryForSpawnLane(int spawnIndex)
+    {
+        var wave = UpcomingWaveDefinition;
+        return wave == null
+            ? string.Empty
+            : WavePreviewHelper.BuildEnemySummaryForSpawnLane(wave, spawnIndex);
+    }
+
+    public int GetUpcomingEnemyCountForSpawnLane(int spawnIndex)
+    {
+        var wave = UpcomingWaveDefinition;
+        return wave == null ? 0 : WavePreviewHelper.CountEnemiesForSpawnLane(wave, spawnIndex);
+    }
+
+    public static string GetSpawnLaneDisplayName(int spawnIndex)
+    {
+        return spawnIndex == 0 ? "Upper Route" : "Lower Route";
+    }
+
+    public void ResetLevel()
+    {
+        Time.timeScale = 1f;
+
+        if (GamePauseController.Instance != null)
+            GamePauseController.Instance.Resume();
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

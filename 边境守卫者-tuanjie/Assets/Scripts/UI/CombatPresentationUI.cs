@@ -13,6 +13,7 @@ public class CombatPresentationUI : MonoBehaviour
     const float TowerWarningDuration = 3.2f;
 
     GameObject hpBarRoot;
+    RectTransform hpFillRect;
     Image hpFillImage;
     TextMeshProUGUI hpNameText;
     TextMeshProUGUI hpValueText;
@@ -135,18 +136,14 @@ public class CombatPresentationUI : MonoBehaviour
         }
 
         SetHpBarVisible(true);
+        spawnBannerTimer = 0f;
+        SetSpawnBannerVisible(false);
 
         var maxHealth = Mathf.Max(1, trackedEnemy.MaxHealth);
         var currentHealth = Mathf.Clamp(trackedEnemy.CurrentHealth, 0, maxHealth);
         var ratio = currentHealth / (float)maxHealth;
 
-        if (hpFillImage != null)
-        {
-            hpFillImage.fillAmount = ratio;
-            hpFillImage.color = trackedEnemy.IsBoss
-                ? new Color(0.85f, 0.18f, 0.2f, 0.95f)
-                : new Color(0.95f, 0.55f, 0.12f, 0.95f);
-        }
+        SetHpFillRatio(ratio);
 
         if (hpNameText != null)
         {
@@ -162,12 +159,32 @@ public class CombatPresentationUI : MonoBehaviour
             hpValueText.text = $"{currentHealth} / {maxHealth}";
     }
 
+    void SetHpFillRatio(float ratio)
+    {
+        ratio = Mathf.Clamp01(ratio);
+
+        if (hpFillRect != null)
+        {
+            hpFillRect.anchorMin = Vector2.zero;
+            hpFillRect.anchorMax = new Vector2(ratio, 1f);
+            hpFillRect.offsetMin = Vector2.zero;
+            hpFillRect.offsetMax = Vector2.zero;
+        }
+
+        if (hpFillImage != null)
+        {
+            hpFillImage.color = trackedEnemy != null && trackedEnemy.IsBoss
+                ? new Color(0.95f, 0.72f, 0.15f, 0.98f)
+                : new Color(1f, 0.86f, 0.2f, 0.98f);
+        }
+    }
+
     static EnemyBase FindTrackedEnemy()
     {
         EnemyBase best = null;
         var bestScore = int.MinValue;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead || (!enemy.IsElite && !enemy.IsBoss))
                 continue;
@@ -215,7 +232,7 @@ public class CombatPresentationUI : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 1f);
         rootRect.pivot = new Vector2(0.5f, 1f);
         rootRect.sizeDelta = new Vector2(520f, 56f);
-        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 132f);
+        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 108f);
         UiDisplaySettings.SnapRectToPixels(rootRect);
 
         var background = hpBarRoot.AddComponent<Image>();
@@ -238,18 +255,20 @@ public class CombatPresentationUI : MonoBehaviour
         UiDisplaySettings.SnapRectToPixels(barBackgroundRect);
 
         var barBackgroundImage = barBackground.AddComponent<Image>();
-        barBackgroundImage.color = new Color(0.12f, 0.12f, 0.12f, 0.95f);
+        UiDisplaySettings.ApplyWhiteSprite(barBackgroundImage);
+        barBackgroundImage.color = new Color(0.96f, 0.96f, 0.94f, 0.98f);
         barBackgroundImage.raycastTarget = false;
 
         var fillObject = CreateUiObject("BarFill", barBackground.transform);
-        Stretch(fillObject.GetComponent<RectTransform>(), 0f);
+        hpFillRect = fillObject.GetComponent<RectTransform>();
+        hpFillRect.anchorMin = Vector2.zero;
+        hpFillRect.anchorMax = Vector2.one;
+        hpFillRect.offsetMin = Vector2.zero;
+        hpFillRect.offsetMax = Vector2.zero;
 
         hpFillImage = fillObject.AddComponent<Image>();
-        hpFillImage.color = new Color(0.85f, 0.18f, 0.2f, 0.95f);
-        hpFillImage.type = Image.Type.Filled;
-        hpFillImage.fillMethod = Image.FillMethod.Horizontal;
-        hpFillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
-        hpFillImage.fillAmount = 1f;
+        UiDisplaySettings.ApplyWhiteSprite(hpFillImage);
+        hpFillImage.color = new Color(1f, 0.86f, 0.2f, 0.98f);
         hpFillImage.raycastTarget = false;
     }
 
@@ -261,7 +280,7 @@ public class CombatPresentationUI : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 1f);
         rootRect.pivot = new Vector2(0.5f, 1f);
         rootRect.sizeDelta = new Vector2(560f, 72f);
-        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 196f);
+        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 184f);
         UiDisplaySettings.SnapRectToPixels(rootRect);
 
         var background = spawnBannerRoot.AddComponent<Image>();
@@ -284,7 +303,7 @@ public class CombatPresentationUI : MonoBehaviour
         rootRect.anchorMax = new Vector2(0.5f, 1f);
         rootRect.pivot = new Vector2(0.5f, 1f);
         rootRect.sizeDelta = new Vector2(620f, 42f);
-        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 88f);
+        rootRect.anchoredPosition = new Vector2(0f, -ScreenPadding - 52f);
         UiDisplaySettings.SnapRectToPixels(rootRect);
 
         var background = towerWarningRoot.AddComponent<Image>();

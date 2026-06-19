@@ -8,7 +8,7 @@ public class DiamondMineTower : TowerBase
 
     public static DiamondMineTower Build(BuildSlot slot)
     {
-        if (!TowerVisualFactory.TryPayAndOccupy(slot, BuildCost))
+        if (!TowerVisualFactory.TryPayForBuild(slot, BuildCost))
         {
             Debug.Log("Not enough gold for Diamond Mine.");
             return null;
@@ -18,6 +18,12 @@ public class DiamondMineTower : TowerBase
         var tower = towerObject.AddComponent<DiamondMineTower>();
         tower.normalColor = new Color(0.45f, 0.85f, 0.95f);
         tower.Setup(slot, BuildCost, TowerType.DiamondMine);
+        if (tower == null)
+        {
+            TowerVisualFactory.RefundBuild(slot, BuildCost);
+            return null;
+        }
+
         return tower;
     }
 

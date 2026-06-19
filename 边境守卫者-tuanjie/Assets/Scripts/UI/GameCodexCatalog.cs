@@ -19,6 +19,8 @@ public readonly struct CodexEntry
 
 public static class GameCodexCatalog
 {
+    const string TowerHpLine = "Tower HP: 50–250 (Lv × 50, refills on upgrade)";
+
     public static IReadOnlyList<CodexEntry> GetTowerEntries()
     {
         return new[]
@@ -49,18 +51,43 @@ public static class GameCodexCatalog
         };
     }
 
+    public static IReadOnlyList<CodexEntry> GetSynergyEntries()
+    {
+        var entries = new List<CodexEntry>
+        {
+            new CodexEntry(
+                "synergy_overview",
+                "Synergy Guide",
+                "How tower pairs work",
+                TowerSynergyCatalog.BuildCodexOverviewBody())
+        };
+
+        foreach (var rule in TowerSynergyCatalog.RulesList)
+        {
+            var title = char.ToUpperInvariant(rule.Id[0]) + rule.Id.Substring(1);
+            entries.Add(new CodexEntry(
+                $"synergy_{rule.Id}",
+                title,
+                TowerSynergyCatalog.GetCodexSubtitle(rule),
+                TowerSynergyCatalog.GetCodexBody(rule)));
+        }
+
+        return entries;
+    }
+
     static CodexEntry BuildArrowEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: Marksman  ·  Tower HP: 250");
-        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arrow)}g  ·  Synergy: Volley (+ Ice vs slowed)");
+        body.AppendLine("Tag: Marksman");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arrow)}g  ·  Synergy: Volley (+25% vs slowed)");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 4–6 dmg, 0.6s, range 3.5, hits air");
-        body.AppendLine("Lv.2 — 80g → 8–11 dmg, 0.4s");
-        body.AppendLine("Lv.3 — 120g → 14–18 dmg, 0.35s, 10% crit x2");
-        body.AppendLine("Lv.4 — 5 dia → 20–26 dmg, 0.3s, range 4.5, 20% crit");
-        body.AppendLine("Lv.5A Ranger — 10 dia → 28–36 dmg, 0.25s, 20% crit, focus low HP");
-        body.AppendLine("Lv.5B Siege — 10 dia → 50–70 dmg, 1.2s, range 6, line pierce +50% vs armor, no air");
+        body.AppendLine("Lv.1 — 5–8 dmg, 0.6s, range 3.5, hits air");
+        body.AppendLine("Lv.2 — 80g → 10–14 dmg, 0.4s");
+        body.AppendLine("Lv.3 — 120g → 15–20 dmg, 0.35s, 10% crit ×2");
+        body.AppendLine("Lv.4 — 5 dia → 18–24 dmg, 0.3s, range 4.5, 20% crit");
+        body.AppendLine("Lv.5A Ranger — 10 dia → 24–32 dmg, 0.25s, focus low HP");
+        body.AppendLine("Lv.5B Siege — 10 dia → 38–52 dmg, 1.2s, range 6, line pierce, no air");
 
         return new CodexEntry("arrow", "Arrow Tower", "Marksman · single-target DPS", body.ToString());
     }
@@ -68,15 +95,16 @@ public static class GameCodexCatalog
     static CodexEntry BuildFrostEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: Ice  ·  Tower HP: 250");
+        body.AppendLine("Tag: Ice");
+        body.AppendLine(TowerHpLine);
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Frost)}g  ·  Synergy: Shatter (+ Cannon vs slowed)");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 1–2 magic, 1.2s, range 2.5, slow 40%");
-        body.AppendLine("Lv.2 — 100g → 3–5 dmg, slow 60%, 15% freeze 1s");
-        body.AppendLine("Lv.3 — 150g → 6–8 dmg, slow 65%, 20% freeze 1.5s");
-        body.AppendLine("Lv.4 — 5 dia → 9–12 dmg, frost ground + stronger freeze");
+        body.AppendLine("Lv.1 — 2–4 magic, 1.2s, range 2.5, slow 40%");
+        body.AppendLine("Lv.2 — 100g → 4–7 dmg, slow 60%, 15% freeze 1s");
+        body.AppendLine("Lv.3 — 150g → 7–10 dmg, slow 65%, 20% freeze 1.5s");
+        body.AppendLine("Lv.4 — 5 dia → 10–14 dmg, frost ground + stronger freeze");
         body.AppendLine("Lv.5A Permafrost — 10 dia → 12–16 dmg, larger frost zone 3s");
-        body.AppendLine("Lv.5B Blizzard — 10 dia → 28–38 AoE splash, guaranteed freeze 1.5s");
+        body.AppendLine("Lv.5B Blizzard — 10 dia → 18–26 AoE splash, guaranteed freeze 1.5s");
 
         return new CodexEntry("frost", "Frost Tower", "Ice · slow & control", body.ToString());
     }
@@ -84,15 +112,16 @@ public static class GameCodexCatalog
     static CodexEntry BuildCannonEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: Explosive  ·  Tower HP: 250");
-        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Cannon)}g  ·  Synergy: Shatter / Breach (+ Frost / Arcane)");
+        body.AppendLine("Tag: Explosive");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Cannon)}g  ·  Synergy: Shatter / Breach");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 9–14 dmg, 2.0s, splash x3, no air");
-        body.AppendLine("Lv.2 — 120g → 15–24 dmg, 0.3s stun");
-        body.AppendLine("Lv.3 — 180g → 22–32 dmg, wider splash, 0.5s stun");
-        body.AppendLine("Lv.4 — 6 dia → 30–42 dmg, fire ground 6 DPS");
-        body.AppendLine("Lv.5A Incendiary — 12 dia → 38–52 dmg, stronger fire ground");
-        body.AppendLine("Lv.5B Thunder — 12 dia → 65–90 dmg, range 5.5, focus high HP, -8 armor, 15 armor pen");
+        body.AppendLine("Lv.1 — 11–17 dmg, 2.0s, splash ×3, no air");
+        body.AppendLine("Lv.2 — 120g → 18–28 dmg, 0.3s stun");
+        body.AppendLine("Lv.3 — 180g → 24–36 dmg, wider splash, 0.5s stun");
+        body.AppendLine("Lv.4 — 6 dia → 28–40 dmg, fire ground 6 DPS");
+        body.AppendLine("Lv.5A Incendiary — 12 dia → 34–48 dmg, stronger fire ground");
+        body.AppendLine("Lv.5B Thunder — 12 dia → 48–68 dmg, range 5.5, focus high HP, −8 armor");
 
         return new CodexEntry("cannon", "Cannon Tower", "Explosive · AoE burst", body.ToString());
     }
@@ -100,15 +129,16 @@ public static class GameCodexCatalog
     static CodexEntry BuildArcaneEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: Arcane  ·  Tower HP: 250");
-        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arcane)}g  ·  Synergy: Breach / Ward (+ Cannon / Barracks)");
+        body.AppendLine("Tag: Arcane");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arcane)}g  ·  Synergy: Breach / Ward");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 8–12 magic, 0.9s, 20% armor pen, hits air");
-        body.AppendLine("Lv.2 — 110g → 14–20 dmg, 35% armor pen");
-        body.AppendLine("Lv.3 — 150g → 20–28 dmg, 45% armor pen");
-        body.AppendLine("Lv.4 — 5 dia → 27–36 dmg, steal 2 armor per hit (5s stack)");
-        body.AppendLine("Lv.5A Destroyer — 10 dia → 36–48 dmg, steal armor & buff nearby towers +2 dmg");
-        body.AppendLine("Lv.5B Void Rift — 10 dia → 15–22 dmg + void pulse every 8s (pull + 12 true dmg)");
+        body.AppendLine("Lv.1 — 10–14 magic, 0.9s, 20% armor pen, hits air");
+        body.AppendLine("Lv.2 — 110g → 16–22 dmg, 35% armor pen");
+        body.AppendLine("Lv.3 — 150g → 22–30 dmg, 45% armor pen");
+        body.AppendLine("Lv.4 — 5 dia → 26–34 dmg, steal 2 armor per hit");
+        body.AppendLine("Lv.5A Destroyer — 10 dia → 30–40 dmg, steal armor & buff allies +2 dmg");
+        body.AppendLine("Lv.5B Void Rift — 10 dia → 15–22 dmg + void pulse every 8s");
 
         return new CodexEntry("arcane", "Arcane Tower", "Arcane · armor shred", body.ToString());
     }
@@ -116,7 +146,8 @@ public static class GameCodexCatalog
     static CodexEntry BuildBarracksEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: Guardian  ·  Tower HP: 250  ·  Rally supported");
+        body.AppendLine("Tag: Guardian  ·  Rally supported");
+        body.AppendLine(TowerHpLine);
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Barracks)}g  ·  Synergy: Ward (+ Arcane armor & dmg)");
         body.AppendLine();
         body.AppendLine("Lv.1 — 2 soldiers, 80 HP, 2–4 dmg, rally 1.8, respawn 8s");
@@ -132,8 +163,9 @@ public static class GameCodexCatalog
     static CodexEntry BuildMineEntry()
     {
         var body = new StringBuilder();
-        body.AppendLine("Tag: —  ·  Tower HP: 250");
-        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.DiamondMine)}g  ·  Cannot upgrade or sell branch");
+        body.AppendLine("Tag: —");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.DiamondMine)}g  ·  Cannot upgrade");
         body.AppendLine();
         body.AppendLine("Produces 0.1 diamonds per second while alive.");
         body.AppendLine("Occupies one build platform for the whole mission.");

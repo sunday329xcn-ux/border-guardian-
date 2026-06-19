@@ -76,7 +76,7 @@ public abstract class CombatTowerBase : TowerBase
         var bestProgress = float.MinValue;
         var rangeSqr = range * range;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (!IsValidTarget(enemy, rangeSqr))
                 continue;
@@ -97,7 +97,7 @@ public abstract class CombatTowerBase : TowerBase
         var lowestHealth = int.MaxValue;
         var rangeSqr = range * range;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (!IsValidTarget(enemy, rangeSqr))
                 continue;
@@ -118,7 +118,7 @@ public abstract class CombatTowerBase : TowerBase
         var highestHealth = int.MinValue;
         var rangeSqr = range * range;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (!IsValidTarget(enemy, rangeSqr))
                 continue;
@@ -172,7 +172,7 @@ public abstract class CombatTowerBase : TowerBase
     void PerformLineAttack(EnemyBase primary)
     {
         var direction = (primary.transform.position - transform.position).normalized;
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead)
                 continue;
@@ -201,7 +201,7 @@ public abstract class CombatTowerBase : TowerBase
     void PerformSplashAttack(EnemyBase primary)
     {
         var hitCount = 0;
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead)
                 continue;
@@ -273,7 +273,7 @@ public abstract class CombatTowerBase : TowerBase
         if (destroyerAllyBonus <= 0)
             return;
 
-        foreach (var tower in TowerRegistry.ActiveTowers)
+        foreach (var tower in TowerRegistry.ActiveTowersSnapshot)
         {
             if (tower == null || tower == this || tower is not CombatTowerBase combatAlly)
                 continue;
@@ -388,7 +388,7 @@ public abstract class CombatTowerBase : TowerBase
             return;
 
         voidPulseTimer = voidPulseCooldown;
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead)
                 continue;

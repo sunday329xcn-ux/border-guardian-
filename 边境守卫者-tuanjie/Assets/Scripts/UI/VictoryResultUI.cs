@@ -66,15 +66,22 @@ public class VictoryResultUI : MonoBehaviour
             overlayRoot.SetActive(false);
     }
 
+    void OnResetClicked()
+    {
+        Time.timeScale = 1f;
+        var waveManager = FindObjectOfType<WaveManager>();
+        if (waveManager != null)
+        {
+            waveManager.ResetLevel();
+            return;
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     void OnContinueClicked()
     {
         Hide();
-    }
-
-    void OnReplayClicked()
-    {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     void CreateOverlay()
@@ -124,8 +131,8 @@ public class VictoryResultUI : MonoBehaviour
         var continueButton = CreateButton(panel.transform, "Continue", new Vector2(160f, 44f), 18f, OnContinueClicked);
         PlaceBottomButton(continueButton.GetComponent<RectTransform>(), -110f);
 
-        var replayButton = CreateButton(panel.transform, "Replay", new Vector2(160f, 44f), 18f, OnReplayClicked);
-        PlaceBottomButton(replayButton.GetComponent<RectTransform>(), 62f);
+        var resetButton = CreateButton(panel.transform, "Reset", new Vector2(160f, 44f), 18f, OnResetClicked);
+        PlaceBottomButton(resetButton.GetComponent<RectTransform>(), 62f);
     }
 
     static void LayoutLine(RectTransform rect, float y, float height, bool stretch = false)

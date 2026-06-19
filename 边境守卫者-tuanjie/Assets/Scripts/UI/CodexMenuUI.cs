@@ -8,20 +8,24 @@ public class CodexMenuUI : MonoBehaviour
     enum CodexTab
     {
         Towers,
-        Enemies
+        Enemies,
+        Synergies
     }
 
     const float ScreenPadding = 24f;
 
     GameObject overlayRoot;
     GameObject listPanel;
+    RectTransform listContentRect;
     TextMeshProUGUI detailTitleText;
     TextMeshProUGUI detailSubtitleText;
     TextMeshProUGUI detailBodyText;
     Button towersTabButton;
     Button enemiesTabButton;
+    Button synergiesTabButton;
     Image towersTabImage;
     Image enemiesTabImage;
+    Image synergiesTabImage;
 
     CodexTab activeTab = CodexTab.Towers;
     int selectedIndex;
@@ -44,7 +48,7 @@ public class CodexMenuUI : MonoBehaviour
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.sizeDelta = new Vector2(96f, 36f);
-        rect.anchoredPosition = new Vector2(ScreenPadding, -188f);
+        rect.anchoredPosition = new Vector2(ScreenPadding, -212f);
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = buttonObject.AddComponent<Image>();
@@ -76,14 +80,14 @@ public class CodexMenuUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(920f, 620f);
+        panelRect.sizeDelta = new Vector2(960f, 640f);
         panelRect.anchoredPosition = Vector2.zero;
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var panelBackground = panel.AddComponent<Image>();
         UiDisplaySettings.ApplyPanelBackground(panelBackground, 0.97f);
 
-        var title = CreateLabel(panel.transform, "Tower & Enemy Codex", 30f, TextAlignmentOptions.TopLeft);
+        var title = CreateLabel(panel.transform, "Game Codex", 30f, TextAlignmentOptions.TopLeft);
         LayoutTop(title.rectTransform, -16f, 36f, 24f, -24f);
 
         var closeObject = CreateUiObject("CloseButton", panel.transform);
@@ -105,45 +109,81 @@ public class CodexMenuUI : MonoBehaviour
         var closeText = CreateLabel(closeObject.transform, "Close", 17f, TextAlignmentOptions.Center);
         Stretch(closeText.rectTransform);
 
-        towersTabButton = CreateTabButton(panel.transform, "Towers", -58f, true, () => SwitchTab(CodexTab.Towers));
-        enemiesTabButton = CreateTabButton(panel.transform, "Enemies", 86f, false, () => SwitchTab(CodexTab.Enemies));
+        towersTabButton = CreateTabButton(panel.transform, "Towers", 24f, 100f, () => SwitchTab(CodexTab.Towers));
+        enemiesTabButton = CreateTabButton(panel.transform, "Enemies", 130f, 100f, () => SwitchTab(CodexTab.Enemies));
+        synergiesTabButton = CreateTabButton(panel.transform, "Synergy", 236f, 100f, () => SwitchTab(CodexTab.Synergies));
         towersTabImage = towersTabButton.GetComponent<Image>();
         enemiesTabImage = enemiesTabButton.GetComponent<Image>();
+        synergiesTabImage = synergiesTabButton.GetComponent<Image>();
 
         listPanel = CreateUiObject("ListPanel", panel.transform);
         var listRect = listPanel.GetComponent<RectTransform>();
         listRect.anchorMin = new Vector2(0f, 0f);
         listRect.anchorMax = new Vector2(0f, 1f);
         listRect.pivot = new Vector2(0f, 1f);
-        listRect.anchoredPosition = new Vector2(20f, -96f);
-        listRect.sizeDelta = new Vector2(220f, -116f);
+        listRect.anchoredPosition = new Vector2(20f, -104f);
+        listRect.sizeDelta = new Vector2(232f, -124f);
 
         var listBackground = listPanel.AddComponent<Image>();
         listBackground.color = new Color(0.06f, 0.08f, 0.06f, 0.92f);
+
+        var listScroll = listPanel.AddComponent<ScrollRect>();
+        listScroll.horizontal = false;
+        listScroll.vertical = true;
+        listScroll.movementType = ScrollRect.MovementType.Clamped;
+
+        var listViewport = CreateUiObject("ListViewport", listPanel.transform);
+        var listViewportRect = listViewport.GetComponent<RectTransform>();
+        Stretch(listViewportRect);
+        listViewport.AddComponent<RectMask2D>();
+        listScroll.viewport = listViewportRect;
+
+        var listContent = CreateUiObject("ListContent", listViewport.transform);
+        listContentRect = listContent.GetComponent<RectTransform>();
+        listContentRect.anchorMin = new Vector2(0f, 1f);
+        listContentRect.anchorMax = new Vector2(1f, 1f);
+        listContentRect.pivot = new Vector2(0.5f, 1f);
+        listContentRect.anchoredPosition = Vector2.zero;
+        listContentRect.sizeDelta = new Vector2(0f, 0f);
+        listScroll.content = listContentRect;
+
+        var listLayout = listContent.AddComponent<VerticalLayoutGroup>();
+        listLayout.padding = new RectOffset(8, 8, 8, 8);
+        listLayout.spacing = 6f;
+        listLayout.childAlignment = TextAnchor.UpperCenter;
+        listLayout.childControlWidth = true;
+        listLayout.childControlHeight = true;
+        listLayout.childForceExpandWidth = true;
+        listLayout.childForceExpandHeight = false;
+
+        var listContentFitter = listContent.AddComponent<ContentSizeFitter>();
+        listContentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        listContentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         var detailPanel = CreateUiObject("DetailPanel", panel.transform);
         var detailRect = detailPanel.GetComponent<RectTransform>();
         detailRect.anchorMin = new Vector2(0f, 0f);
         detailRect.anchorMax = new Vector2(1f, 1f);
-        detailRect.offsetMin = new Vector2(256f, 20f);
-        detailRect.offsetMax = new Vector2(-20f, -96f);
+        detailRect.offsetMin = new Vector2(268f, 20f);
+        detailRect.offsetMax = new Vector2(-20f, -104f);
 
         var detailBackground = detailPanel.AddComponent<Image>();
         detailBackground.color = new Color(0.05f, 0.07f, 0.05f, 0.88f);
 
-        detailTitleText = CreateLabel(detailPanel.transform, string.Empty, 24f, TextAlignmentOptions.TopLeft);
-        LayoutDetailHeader(detailTitleText.rectTransform, -12f, 30f);
+        detailTitleText = CreateLabel(detailPanel.transform, string.Empty, 26f, TextAlignmentOptions.TopLeft);
+        detailTitleText.enableWordWrapping = false;
+        LayoutDetailHeader(detailTitleText.rectTransform, -12f, 32f);
 
-        detailSubtitleText = CreateLabel(detailPanel.transform, string.Empty, 16f, TextAlignmentOptions.TopLeft);
+        detailSubtitleText = CreateLabel(detailPanel.transform, string.Empty, 15f, TextAlignmentOptions.TopLeft);
         detailSubtitleText.color = new Color(0.95f, 0.9f, 0.65f);
-        LayoutDetailHeader(detailSubtitleText.rectTransform, -44f, 22f);
+        LayoutDetailHeader(detailSubtitleText.rectTransform, -48f, 24f);
 
         var scrollObject = CreateUiObject("DetailScroll", detailPanel.transform);
         var scrollRect = scrollObject.GetComponent<RectTransform>();
         scrollRect.anchorMin = Vector2.zero;
         scrollRect.anchorMax = Vector2.one;
         scrollRect.offsetMin = new Vector2(16f, 16f);
-        scrollRect.offsetMax = new Vector2(-16f, -72f);
+        scrollRect.offsetMax = new Vector2(-16f, -80f);
 
         var scroll = scrollObject.AddComponent<ScrollRect>();
         scroll.horizontal = false;
@@ -162,34 +202,41 @@ public class CodexMenuUI : MonoBehaviour
         contentRect.anchorMax = new Vector2(1f, 1f);
         contentRect.pivot = new Vector2(0.5f, 1f);
         contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0f, 800f);
+        contentRect.sizeDelta = new Vector2(0f, 0f);
         scroll.content = contentRect;
 
-        detailBodyText = CreateLabel(content.transform, string.Empty, 17f, TextAlignmentOptions.TopLeft);
+        var contentFitter = content.AddComponent<ContentSizeFitter>();
+        contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        detailBodyText = CreateLabel(content.transform, string.Empty, 16f, TextAlignmentOptions.TopLeft);
         detailBodyText.color = new Color(0.88f, 0.92f, 0.88f);
+        detailBodyText.lineSpacing = -2f;
         var bodyRect = detailBodyText.rectTransform;
         bodyRect.anchorMin = new Vector2(0f, 1f);
         bodyRect.anchorMax = new Vector2(1f, 1f);
         bodyRect.pivot = new Vector2(0f, 1f);
         bodyRect.anchoredPosition = Vector2.zero;
-        bodyRect.sizeDelta = new Vector2(-8f, 800f);
+        bodyRect.sizeDelta = new Vector2(-8f, 0f);
+
+        var bodyFitter = detailBodyText.gameObject.AddComponent<ContentSizeFitter>();
+        bodyFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        bodyFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
     }
 
-    Button CreateTabButton(Transform parent, string label, float x, bool isFirst, UnityEngine.Events.UnityAction onClick)
+    Button CreateTabButton(Transform parent, string label, float x, float width, UnityEngine.Events.UnityAction onClick)
     {
         var buttonObject = CreateUiObject($"{label}Tab", parent);
         var rect = buttonObject.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.sizeDelta = new Vector2(120f, 34f);
-        rect.anchoredPosition = new Vector2(24f + x, -58f);
+        rect.sizeDelta = new Vector2(width, 34f);
+        rect.anchoredPosition = new Vector2(x, -58f);
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = buttonObject.AddComponent<Image>();
-        image.color = isFirst
-            ? new Color(0.28f, 0.48f, 0.28f, 0.95f)
-            : new Color(0.2f, 0.2f, 0.2f, 0.9f);
+        image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
 
         var button = buttonObject.AddComponent<Button>();
         button.targetGraphic = image;
@@ -211,11 +258,14 @@ public class CodexMenuUI : MonoBehaviour
 
     void RefreshTabVisuals()
     {
-        var towersActive = activeTab == CodexTab.Towers;
-        towersTabImage.color = towersActive
-            ? new Color(0.28f, 0.48f, 0.28f, 0.95f)
-            : new Color(0.2f, 0.2f, 0.2f, 0.9f);
-        enemiesTabImage.color = !towersActive
+        SetTabActive(towersTabImage, activeTab == CodexTab.Towers);
+        SetTabActive(enemiesTabImage, activeTab == CodexTab.Enemies);
+        SetTabActive(synergiesTabImage, activeTab == CodexTab.Synergies);
+    }
+
+    static void SetTabActive(Image image, bool active)
+    {
+        image.color = active
             ? new Color(0.28f, 0.48f, 0.28f, 0.95f)
             : new Color(0.2f, 0.2f, 0.2f, 0.9f);
     }
@@ -231,20 +281,18 @@ public class CodexMenuUI : MonoBehaviour
         listButtons.Clear();
 
         var entries = GetActiveEntries();
-        const float itemHeight = 38f;
-        const float topPadding = 8f;
 
         for (int i = 0; i < entries.Count; i++)
         {
             var index = i;
             var entry = entries[i];
-            var itemObject = CreateUiObject($"ListItem_{entry.Id}", listPanel.transform);
+            var itemObject = CreateUiObject($"ListItem_{entry.Id}", listContentRect);
             var rect = itemObject.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 1f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -(topPadding + i * (itemHeight + 6f)));
-            rect.sizeDelta = new Vector2(-12f, itemHeight);
+            rect.sizeDelta = new Vector2(0f, 38f);
+
+            var layoutElement = itemObject.AddComponent<LayoutElement>();
+            layoutElement.minHeight = 38f;
+            layoutElement.preferredHeight = 38f;
 
             var image = itemObject.AddComponent<Image>();
             image.color = i == selectedIndex
@@ -267,9 +315,13 @@ public class CodexMenuUI : MonoBehaviour
 
     IReadOnlyList<CodexEntry> GetActiveEntries()
     {
-        return activeTab == CodexTab.Towers
-            ? GameCodexCatalog.GetTowerEntries()
-            : GameCodexCatalog.GetEnemyEntries();
+        return activeTab switch
+        {
+            CodexTab.Towers => GameCodexCatalog.GetTowerEntries(),
+            CodexTab.Enemies => GameCodexCatalog.GetEnemyEntries(),
+            CodexTab.Synergies => GameCodexCatalog.GetSynergyEntries(),
+            _ => GameCodexCatalog.GetTowerEntries()
+        };
     }
 
     void SelectEntry(int index)

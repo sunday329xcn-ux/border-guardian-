@@ -17,7 +17,7 @@ public abstract class TowerBase : MonoBehaviour
     protected int totalGoldSpent;
     protected int totalDiamondSpent;
     protected TowerBranch branch = TowerBranch.None;
-    protected int maxTowerHealth = 250;
+    protected int maxTowerHealth = 50;
     protected int currentTowerHealth;
 
     public TowerType TowerType { get; protected set; }
@@ -41,6 +41,12 @@ public abstract class TowerBase : MonoBehaviour
 
     public void Setup(BuildSlot slot, int buildCost, TowerType towerType)
     {
+        if (slot == null || !slot.TryOccupy(this))
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         TowerType = towerType;
         occupiedSlot = slot;
         totalGoldSpent = buildCost;
@@ -49,8 +55,8 @@ public abstract class TowerBase : MonoBehaviour
         branch = TowerBranch.None;
 
         EnsureSelectionCollider();
-        currentTowerHealth = maxTowerHealth;
         ApplyLevelStats();
+        ApplyTowerHealthForLevel();
         OnSetupComplete();
     }
 
@@ -76,10 +82,21 @@ public abstract class TowerBase : MonoBehaviour
             return;
 
         if (occupiedSlot != null)
-            occupiedSlot.Release();
+            occupiedSlot.Release(this);
 
         TowerSelectionController.DeselectIf(this);
         Destroy(gameObject);
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (occupiedSlot != null)
+        {
+            occupiedSlot.Release(this);
+            occupiedSlot = null;
+        }
+
+        TowerSelectionController.DeselectIf(this);
     }
 
     protected virtual void Awake()
@@ -118,6 +135,7 @@ public abstract class TowerBase : MonoBehaviour
         totalGoldSpent += cost;
         level++;
         ApplyLevelStats();
+        ApplyTowerHealthForLevel();
         return true;
     }
 
@@ -133,6 +151,7 @@ public abstract class TowerBase : MonoBehaviour
         totalDiamondSpent += cost;
         level = 4;
         ApplyLevelStats();
+        ApplyTowerHealthForLevel();
         return true;
     }
 
@@ -149,6 +168,7 @@ public abstract class TowerBase : MonoBehaviour
         branch = selectedBranch;
         level = 5;
         ApplyLevelStats();
+        ApplyTowerHealthForLevel();
         return true;
     }
 
@@ -170,7 +190,7 @@ public abstract class TowerBase : MonoBehaviour
         GameManager.Instance.AddGold(totalGoldSpent / 2);
         OnSold();
         if (occupiedSlot != null)
-            occupiedSlot.Release();
+            occupiedSlot.Release(this);
 
         TowerSelectionController.DeselectIf(this);
         Destroy(gameObject);
@@ -240,6 +260,12 @@ public abstract class TowerBase : MonoBehaviour
     protected abstract void ApplyLevelStats();
     protected abstract int GetUpgradeGoldCost(int targetLevel);
     protected abstract int GetUpgradeDiamondCost(int targetLevel);
+
+    protected void ApplyTowerHealthForLevel()
+    {
+        maxTowerHealth = level * 50;
+        currentTowerHealth = maxTowerHealth;
+    }
 
     void EnsureSelectionCollider()
     {

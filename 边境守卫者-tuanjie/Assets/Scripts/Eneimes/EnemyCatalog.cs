@@ -56,16 +56,16 @@ public static class EnemyCatalog
     {
         return type switch
         {
-            EnemyType.Imp => new EnemyStats(60, 0, 0, false, 2.5f, 1, 0, 1, 0, false, false, false, new Color(0.9f, 0.25f, 0.25f)),
-            EnemyType.Orc => new EnemyStats(200, 10, 0, false, 1.8f, 3, 0, 1, 0, false, false, false, new Color(0.45f, 0.65f, 0.35f)),
+            EnemyType.Imp => new EnemyStats(65, 0, 0, false, 2.5f, 1, 0, 1, 0, false, false, false, new Color(0.9f, 0.25f, 0.25f)),
+            EnemyType.Orc => new EnemyStats(220, 10, 0, false, 1.8f, 3, 0, 1, 0, false, false, false, new Color(0.45f, 0.65f, 0.35f)),
             EnemyType.GoblinRipper => new EnemyStats(50, 0, 0, false, 3.4f, 1, 0, 0, 10, false, false, false, new Color(0.95f, 0.55f, 0.15f), 0.5f),
             EnemyType.Wraith => new EnemyStats(40, 0, 50, true, 3f, 2, 0, 1, 0, false, false, false, new Color(0.55f, 0.75f, 1f), 0.5f),
-            EnemyType.RockGolem => new EnemyStats(1200, 30, 10, false, 1.2f, 15, 2, 5, 0, true, false, false, new Color(0.55f, 0.5f, 0.45f), 0.85f),
+            EnemyType.RockGolem => new EnemyStats(1600, 32, 12, false, 1.2f, 15, 2, 5, 0, true, false, false, new Color(0.55f, 0.5f, 0.45f), 0.85f),
             EnemyType.FireBomber => new EnemyStats(100, 5, 30, false, 2.2f, 3, 0, 1, 0, false, false, false, new Color(1f, 0.35f, 0.1f)),
             EnemyType.ShadowPriest => new EnemyStats(180, 0, 20, false, 1.6f, 5, 0, 1, 0, false, false, false, new Color(0.45f, 0.2f, 0.55f)),
             EnemyType.WolfRider => new EnemyStats(150, 8, 0, false, 2.8f, 4, 0, 1, 0, false, false, false, new Color(0.6f, 0.45f, 0.25f)),
-            EnemyType.TowerBreaker => new EnemyStats(800, 20, 10, false, 1.5f, 12, 1, 5, 0, true, false, true, new Color(0.35f, 0.35f, 0.4f), 0.8f),
-            EnemyType.AncientDragon => new EnemyStats(3500, 15, 30, true, 1.6f, 50, 8, 10, 0, false, true, false, new Color(0.75f, 0.15f, 0.2f), 1.1f),
+            EnemyType.TowerBreaker => new EnemyStats(950, 22, 12, false, 1.5f, 12, 1, 5, 0, true, false, true, new Color(0.35f, 0.35f, 0.4f), 0.8f),
+            EnemyType.AncientDragon => new EnemyStats(4800, 18, 32, true, 1.6f, 50, 8, 10, 0, false, true, false, new Color(0.75f, 0.15f, 0.2f), 1.1f),
             _ => new EnemyStats(60, 0, 0, false, 2.5f, 1, 0, 1, 0, false, false, false, Color.red)
         };
     }
@@ -86,6 +86,34 @@ public static class EnemyCatalog
             EnemyType.AncientDragon => "Ancient Dragon",
             _ => type.ToString()
         };
+    }
+
+    public static string GetThreatRating(
+        EnemyType type,
+        int leakDamage,
+        int stealGoldOnLeak,
+        bool isBoss,
+        bool isElite)
+    {
+        if (isBoss)
+            return "Very High (Boss)";
+
+        if (type == EnemyType.TowerBreaker)
+            return "Very High (Tower Break)";
+
+        if (type == EnemyType.FireBomber)
+            return "High (Explosion)";
+
+        if (stealGoldOnLeak > 0)
+            return "Medium (Gold Steal)";
+
+        if (isElite)
+            return "High (Elite)";
+
+        if (leakDamage >= 5)
+            return "High";
+
+        return leakDamage > 1 ? "Medium" : "Low";
     }
 
     public static void AttachBehavior(EnemyBase enemy, EnemyType type)

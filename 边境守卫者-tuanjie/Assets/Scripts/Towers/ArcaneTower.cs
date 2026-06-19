@@ -6,7 +6,7 @@ public class ArcaneTower : CombatTowerBase
 
     public static ArcaneTower Build(BuildSlot slot)
     {
-        if (!TowerVisualFactory.TryPayAndOccupy(slot, BuildCost))
+        if (!TowerVisualFactory.TryPayForBuild(slot, BuildCost))
         {
             Debug.Log("Not enough gold for Arcane Tower.");
             return null;
@@ -16,6 +16,12 @@ public class ArcaneTower : CombatTowerBase
         var tower = towerObject.AddComponent<ArcaneTower>();
         tower.normalColor = new Color(0.62f, 0.35f, 0.85f);
         tower.Setup(slot, BuildCost, TowerType.Arcane);
+        if (tower == null)
+        {
+            TowerVisualFactory.RefundBuild(slot, BuildCost);
+            return null;
+        }
+
         return tower;
     }
 
@@ -27,19 +33,19 @@ public class ArcaneTower : CombatTowerBase
         switch (level)
         {
             case 1:
-                minDamage = 8; maxDamage = 12; attackInterval = 0.9f; range = 3.5f; armorPenetration = 20f;
+                minDamage = 10; maxDamage = 14; attackInterval = 0.9f; range = 3.5f; armorPenetration = 20f;
                 break;
             case 2:
-                minDamage = 14; maxDamage = 20; attackInterval = 0.9f; range = 3.5f; armorPenetration = 35f;
+                minDamage = 16; maxDamage = 22; attackInterval = 0.9f; range = 3.5f; armorPenetration = 35f;
                 break;
             case 3:
-                minDamage = 20; maxDamage = 28; attackInterval = 0.85f; range = 3.5f; armorPenetration = 45f;
+                minDamage = 22; maxDamage = 30; attackInterval = 0.85f; range = 3.5f; armorPenetration = 45f;
                 break;
             case 4:
-                minDamage = 27; maxDamage = 36; attackInterval = 0.8f; range = 3.5f; armorPenetration = 45f; armorStealPerHit = 2;
+                minDamage = 26; maxDamage = 34; attackInterval = 0.8f; range = 3.5f; armorPenetration = 45f; armorStealPerHit = 2;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 36; maxDamage = 48; attackInterval = 0.75f; range = 3.5f; armorPenetration = 45f;
+                minDamage = 30; maxDamage = 40; attackInterval = 0.75f; range = 3.5f; armorPenetration = 45f;
                 armorStealPerHit = 2; destroyerAllyBonus = 2;
                 break;
             case 5 when branch == TowerBranch.BranchB:

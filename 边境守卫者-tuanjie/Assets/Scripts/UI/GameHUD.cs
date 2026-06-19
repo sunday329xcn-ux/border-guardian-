@@ -16,7 +16,7 @@ public class GameHUD : MonoBehaviour
     [SerializeField] bool autoLayoutTopLeft = true;
     [SerializeField] float leftPadding = 28f;
     [SerializeField] float topPadding = 28f;
-    [SerializeField] float lineHeight = 38f;
+    [SerializeField] float lineHeight = 42f;
 
     Image resourceBackground;
 
@@ -67,7 +67,7 @@ public class GameHUD : MonoBehaviour
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(leftPadding - 14f, -topPadding + 10f);
-        rect.sizeDelta = new Vector2(230f, lineHeight * 3f + 18f);
+        rect.sizeDelta = new Vector2(240f, lineHeight * 3f + 22f);
         UiDisplaySettings.SnapRectToPixels(rect);
 
         resourceBackground = panelObject.GetComponent<Image>();
@@ -91,7 +91,7 @@ public class GameHUD : MonoBehaviour
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(leftPadding, -topPadding - lineIndex * lineHeight);
-        rect.sizeDelta = new Vector2(200f, lineHeight);
+        rect.sizeDelta = new Vector2(220f, lineHeight - 4f);
 
         text.alignment = TextAlignmentOptions.TopLeft;
         text.raycastTarget = false;
@@ -163,7 +163,7 @@ public class GameHUD : MonoBehaviour
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(leftPadding, -topPadding - 3 * lineHeight);
+            rect.anchoredPosition = new Vector2(leftPadding, -topPadding - 3 * lineHeight - 8f);
             rect.sizeDelta = new Vector2(320f, 40f);
             statusText.alignment = TextAlignmentOptions.TopLeft;
             UiDisplaySettings.ApplySharpText(statusText, 36f);

@@ -17,7 +17,7 @@ public static class TowerSynergyService
         var count = 0;
         var rangeSqr = range * range;
 
-        foreach (var candidate in TowerRegistry.ActiveTowers)
+        foreach (var candidate in TowerRegistry.ActiveTowersSnapshot)
         {
             if (candidate == null || candidate == tower || candidate.TowerType != partnerType)
                 continue;

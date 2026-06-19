@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 
 [Serializable]
 public struct WaveSpawnGroup
@@ -87,5 +88,95 @@ public static class WavePreviewHelper
             return string.Empty;
 
         return wave.hintText;
+    }
+
+    public static int CountEnemiesForSpawnLane(WaveDefinition wave, int spawnIndex)
+    {
+        if (wave?.groups == null || wave.groups.Length == 0)
+            return 0;
+
+        var lane = Mathf.Clamp(spawnIndex, 0, 1);
+        var spawnCounter = 0;
+        var count = 0;
+
+        foreach (var group in wave.groups)
+        {
+            if (group.count <= 0)
+                continue;
+
+            for (int i = 0; i < group.count; i++)
+            {
+                if (spawnCounter % 2 == lane)
+                    count++;
+
+                spawnCounter++;
+            }
+        }
+
+        return count;
+    }
+
+    public static IReadOnlyList<WavePreviewEntry> BuildEntriesForSpawnLane(WaveDefinition wave, int spawnIndex)
+    {
+        if (wave?.groups == null || wave.groups.Length == 0)
+            return Array.Empty<WavePreviewEntry>();
+
+        var lane = Mathf.Clamp(spawnIndex, 0, 1);
+        var counts = new Dictionary<EnemyType, int>();
+        var spawnCounter = 0;
+
+        foreach (var group in wave.groups)
+        {
+            if (group.count <= 0)
+                continue;
+
+            for (int i = 0; i < group.count; i++)
+            {
+                if (spawnCounter % 2 == lane)
+                {
+                    counts.TryGetValue(group.enemyType, out var existing);
+                    counts[group.enemyType] = existing + 1;
+                }
+
+                spawnCounter++;
+            }
+        }
+
+        var entries = new List<WavePreviewEntry>(counts.Count);
+        foreach (var pair in counts)
+            entries.Add(new WavePreviewEntry(pair.Key, pair.Value));
+
+        entries.Sort((a, b) => string.Compare(
+            EnemyCatalog.GetDisplayName(a.EnemyType),
+            EnemyCatalog.GetDisplayName(b.EnemyType),
+            StringComparison.Ordinal));
+
+        return entries;
+    }
+
+    public static string BuildEnemySummaryForSpawnLane(WaveDefinition wave, int spawnIndex)
+    {
+        var entries = BuildEntriesForSpawnLane(wave, spawnIndex);
+        if (entries.Count == 0)
+            return "No enemies on this route";
+
+        var builder = new StringBuilder();
+        for (int i = 0; i < entries.Count; i++)
+        {
+            if (i > 0)
+                builder.Append("\n");
+
+            var entry = entries[i];
+            builder.Append(EnemyCatalog.GetDisplayName(entry.EnemyType));
+            builder.Append(" x");
+            builder.Append(entry.Count);
+        }
+
+        return builder.ToString();
+    }
+
+    public static bool UsesSpawnLane(WaveDefinition wave, int spawnIndex)
+    {
+        return CountEnemiesForSpawnLane(wave, spawnIndex) > 0;
     }
 }

@@ -7,6 +7,7 @@ public class TowerInfoPanelUI : MonoBehaviour
 {
     GameObject panelRoot;
     TextMeshProUGUI titleText;
+    TextMeshProUGUI hpText;
     TextMeshProUGUI detailText;
     Button upgradeButton;
     Button sellButton;
@@ -65,7 +66,8 @@ public class TowerInfoPanelUI : MonoBehaviour
         if (tower == null || panelRoot == null)
             return;
 
-        titleText.text = $"{tower.GetDisplayName()}  Lv.{tower.Level}  ·  HP {tower.CurrentTowerHealth}/{tower.MaxTowerHealth}";
+        titleText.text = $"{tower.GetDisplayName()}  ·  Lv.{tower.Level}";
+        hpText.text = $"HP  {tower.CurrentTowerHealth} / {tower.MaxTowerHealth}";
 
         branchAButton.gameObject.SetActive(false);
         branchBButton.gameObject.SetActive(false);
@@ -89,9 +91,12 @@ public class TowerInfoPanelUI : MonoBehaviour
         else if (nextKind == TowerUpgradeKind.Gold)
         {
             var cost = tower.GetUpgradeGoldCostForNextLevel();
-            detailText.text = AppendSynergy(tower, $"Upgrade to Lv.{tower.Level + 1} with gold.");
+            var canAfford = GameManager.Instance != null && GameManager.Instance.Gold >= cost;
+            detailText.text = AppendSynergy(tower, canAfford
+                ? $"Upgrade to Lv.{tower.Level + 1} with gold."
+                : $"Upgrade to Lv.{tower.Level + 1} needs {cost}g (you have {GameManager.Instance?.Gold ?? 0}g).");
             upgradeButtonText.text = $"Upgrade ({cost}g)";
-            upgradeButton.interactable = GameManager.Instance != null && GameManager.Instance.Gold >= cost;
+            upgradeButton.interactable = canAfford;
         }
         else if (nextKind == TowerUpgradeKind.DiamondLevel4)
         {
@@ -201,40 +206,49 @@ public class TowerInfoPanelUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0f, 0f);
         panelRect.anchorMax = new Vector2(0f, 0f);
         panelRect.pivot = new Vector2(0f, 0f);
-        panelRect.sizeDelta = new Vector2(400f, 268f);
+        panelRect.sizeDelta = new Vector2(420f, 328f);
         panelRect.anchoredPosition = new Vector2(24f, buildBarClearance);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panelRoot.AddComponent<Image>();
         UiDisplaySettings.ApplyPanelBackground(background);
 
-        titleText = CreateLabel(panelRoot.transform, "Select a tower", 22f, TextAlignmentOptions.TopLeft);
-        LayoutTop(titleText.rectTransform, -16f, 34f);
+        titleText = CreateLabel(panelRoot.transform, "Select a tower", 20f, TextAlignmentOptions.TopLeft);
+        titleText.enableWordWrapping = false;
+        titleText.overflowMode = TextOverflowModes.Ellipsis;
+        LayoutTop(titleText.rectTransform, -14f, 28f);
 
-        detailText = CreateLabel(panelRoot.transform, string.Empty, 17f, TextAlignmentOptions.TopLeft);
+        hpText = CreateLabel(panelRoot.transform, "HP  — / —", 18f, TextAlignmentOptions.TopLeft);
+        hpText.color = new Color(0.75f, 0.95f, 0.78f);
+        hpText.enableWordWrapping = false;
+        LayoutTop(hpText.rectTransform, -44f, 24f);
+
+        detailText = CreateLabel(panelRoot.transform, string.Empty, 15f, TextAlignmentOptions.TopLeft);
         detailText.color = new Color(0.88f, 0.92f, 0.88f);
-        LayoutTop(detailText.rectTransform, -56f, 92f);
+        detailText.enableWordWrapping = true;
+        detailText.lineSpacing = -2f;
+        LayoutTop(detailText.rectTransform, -72f, 148f);
 
         var upgradeObject = CreateButton(panelRoot.transform, "Upgrade", new Vector2(112f, 40f), 16f, OnUpgradeClicked);
         upgradeButton = upgradeObject.GetComponent<Button>();
         upgradeButtonText = upgradeObject.GetComponentInChildren<TextMeshProUGUI>();
-        PlaceBottomLeft(upgradeObject.GetComponent<RectTransform>(), 16f, 64f);
+        PlaceBottomLeft(upgradeObject.GetComponent<RectTransform>(), 16f, 80f);
 
         rallyObject = CreateButton(panelRoot.transform, "Rally", new Vector2(112f, 40f), 16f, OnRallyClicked);
         rallyButton = rallyObject.GetComponent<Button>();
         rallyButtonText = rallyObject.GetComponentInChildren<TextMeshProUGUI>();
-        PlaceBottomLeft(rallyObject.GetComponent<RectTransform>(), 136f, 64f);
+        PlaceBottomLeft(rallyObject.GetComponent<RectTransform>(), 136f, 80f);
 
         var sellObject = CreateButton(panelRoot.transform, "Sell", new Vector2(112f, 40f), 16f, OnSellClicked);
         sellButton = sellObject.GetComponent<Button>();
         sellButtonText = sellObject.GetComponentInChildren<TextMeshProUGUI>();
-        PlaceBottomLeft(sellObject.GetComponent<RectTransform>(), 256f, 64f);
+        PlaceBottomLeft(sellObject.GetComponent<RectTransform>(), 276f, 80f);
 
-        branchAButton = CreateButton(panelRoot.transform, "Branch A", new Vector2(176f, 40f), 15f, OnBranchAClicked).GetComponent<Button>();
-        PlaceBottomLeft(branchAButton.GetComponent<RectTransform>(), 16f, 16f);
+        branchAButton = CreateButton(panelRoot.transform, "Branch A", new Vector2(188f, 40f), 15f, OnBranchAClicked).GetComponent<Button>();
+        PlaceBottomLeft(branchAButton.GetComponent<RectTransform>(), 16f, 28f);
 
-        branchBButton = CreateButton(panelRoot.transform, "Branch B", new Vector2(176f, 40f), 15f, OnBranchBClicked).GetComponent<Button>();
-        PlaceBottomLeft(branchBButton.GetComponent<RectTransform>(), 208f, 16f);
+        branchBButton = CreateButton(panelRoot.transform, "Branch B", new Vector2(188f, 40f), 15f, OnBranchBClicked).GetComponent<Button>();
+        PlaceBottomLeft(branchBButton.GetComponent<RectTransform>(), 216f, 28f);
     }
 
     GameObject rallyObject;

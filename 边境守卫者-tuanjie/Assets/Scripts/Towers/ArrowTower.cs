@@ -6,7 +6,7 @@ public class ArrowTower : CombatTowerBase
 
     public static ArrowTower Build(BuildSlot slot)
     {
-        if (!TowerVisualFactory.TryPayAndOccupy(slot, BuildCost))
+        if (!TowerVisualFactory.TryPayForBuild(slot, BuildCost))
         {
             Debug.Log("Not enough gold for Arrow Tower.");
             return null;
@@ -16,6 +16,12 @@ public class ArrowTower : CombatTowerBase
         var tower = towerObject.AddComponent<ArrowTower>();
         tower.normalColor = new Color(0.82f, 0.72f, 0.28f);
         tower.Setup(slot, BuildCost, TowerType.Arrow);
+        if (tower == null)
+        {
+            TowerVisualFactory.RefundBuild(slot, BuildCost);
+            return null;
+        }
+
         return tower;
     }
 
@@ -27,23 +33,23 @@ public class ArrowTower : CombatTowerBase
         switch (level)
         {
             case 1:
-                minDamage = 4; maxDamage = 6; attackInterval = 0.6f; range = 3.5f;
+                minDamage = 5; maxDamage = 8; attackInterval = 0.6f; range = 3.5f;
                 break;
             case 2:
-                minDamage = 8; maxDamage = 11; attackInterval = 0.4f; range = 3.5f;
+                minDamage = 10; maxDamage = 14; attackInterval = 0.4f; range = 3.5f;
                 break;
             case 3:
-                minDamage = 14; maxDamage = 18; attackInterval = 0.35f; range = 3.5f; critChance = 0.1f;
+                minDamage = 15; maxDamage = 20; attackInterval = 0.35f; range = 3.5f; critChance = 0.1f;
                 break;
             case 4:
-                minDamage = 20; maxDamage = 26; attackInterval = 0.3f; range = 4.5f; critChance = 0.2f;
+                minDamage = 18; maxDamage = 24; attackInterval = 0.3f; range = 4.5f; critChance = 0.2f;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 28; maxDamage = 36; attackInterval = 0.25f; range = 4.5f; critChance = 0.2f;
+                minDamage = 24; maxDamage = 32; attackInterval = 0.25f; range = 4.5f; critChance = 0.2f;
                 prioritizeLowestHealth = true;
                 break;
             case 5 when branch == TowerBranch.BranchB:
-                minDamage = 50; maxDamage = 70; attackInterval = 1.2f; range = 6f;
+                minDamage = 38; maxDamage = 52; attackInterval = 1.2f; range = 6f;
                 pierceLine = true; pierceArmorBonus = 0.5f; canTargetFlying = false;
                 break;
         }

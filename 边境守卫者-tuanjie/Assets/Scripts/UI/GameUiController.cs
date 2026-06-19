@@ -18,11 +18,8 @@ public class GameUiController : MonoBehaviour
 
     TextMeshProUGUI waveTitleText;
     TextMeshProUGUI waveDetailText;
-    TextMeshProUGUI waveIntelTitleText;
-    TextMeshProUGUI waveIntelEnemyText;
-    TextMeshProUGUI waveIntelHintText;
-    GameObject waveIntelPanel;
     Button callEarlyButton;
+    Button resetButton;
     readonly Dictionary<TowerType, Image> towerButtonImages = new();
     GamePauseController boundPauseController;
 
@@ -48,7 +45,9 @@ public class GameUiController : MonoBehaviour
 
         CreateBuildPanel();
         CreateWavePanel();
-        CreateWaveIntelPanel();
+
+        if (GetComponent<WaveSpawnHintUI>() == null)
+            gameObject.AddComponent<WaveSpawnHintUI>();
 
         if (GetComponent<PauseMenuUI>() == null)
             gameObject.AddComponent<PauseMenuUI>();
@@ -64,6 +63,12 @@ public class GameUiController : MonoBehaviour
 
         if (GetComponent<CodexMenuUI>() == null)
             gameObject.AddComponent<CodexMenuUI>();
+
+        if (GetComponent<TowerInfoPanelUI>() == null)
+            gameObject.AddComponent<TowerInfoPanelUI>();
+
+        if (GetComponent<EnemyInfoPanelUI>() == null)
+            gameObject.AddComponent<EnemyInfoPanelUI>();
 
         if (waveManager != null)
             waveManager.OnWaveStateChanged += RefreshWaveUi;
@@ -193,41 +198,15 @@ public class GameUiController : MonoBehaviour
         }).GetComponent<Button>();
 
         ConfigureLayoutElement(callEarlyButton.GetComponent<RectTransform>(), 40f);
-    }
 
-    void CreateWaveIntelPanel()
-    {
-        waveIntelPanel = CreateUiObject("WaveIntelPanel", transform);
-        var panelRect = waveIntelPanel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 1f);
-        panelRect.anchorMax = new Vector2(0.5f, 1f);
-        panelRect.pivot = new Vector2(0.5f, 1f);
-        panelRect.sizeDelta = new Vector2(520f, 118f);
-        panelRect.anchoredPosition = new Vector2(0f, -ScreenPadding);
-        UiDisplaySettings.SnapRectToPixels(panelRect);
+        resetButton = CreateButton(panel.transform, "Reset", new Vector2(0f, 40f), 18f, () =>
+        {
+            if (waveManager != null)
+                waveManager.ResetLevel();
+        }).GetComponent<Button>();
 
-        var background = waveIntelPanel.AddComponent<Image>();
-        UiDisplaySettings.ApplyPanelBackground(background, 0.9f);
-
-        waveIntelTitleText = CreateLabel(waveIntelPanel.transform, "Incoming Wave", 20f, TextAlignmentOptions.TopLeft);
-        LayoutIntelLine(waveIntelTitleText.rectTransform, -12f, 24f);
-
-        waveIntelEnemyText = CreateLabel(waveIntelPanel.transform, string.Empty, 18f, TextAlignmentOptions.TopLeft);
-        waveIntelEnemyText.color = new Color(0.95f, 0.92f, 0.75f);
-        LayoutIntelLine(waveIntelEnemyText.rectTransform, -38f, 28f);
-
-        waveIntelHintText = CreateLabel(waveIntelPanel.transform, string.Empty, 16f, TextAlignmentOptions.TopLeft);
-        waveIntelHintText.color = new Color(0.75f, 0.9f, 0.78f);
-        LayoutIntelLine(waveIntelHintText.rectTransform, -70f, 36f);
-    }
-
-    static void LayoutIntelLine(RectTransform rect, float y, float height)
-    {
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(1f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(16f, y);
-        rect.sizeDelta = new Vector2(-32f, height);
+        ConfigureLayoutElement(resetButton.GetComponent<RectTransform>(), 40f);
+        resetButton.gameObject.SetActive(false);
     }
 
     void RefreshWaveUi()
@@ -246,32 +225,20 @@ public class GameUiController : MonoBehaviour
         }
 
         if (callEarlyButton != null)
-            callEarlyButton.interactable = waveManager.State == WaveState.Preparation
+        {
+            var isPreparation = waveManager.State == WaveState.Preparation;
+            callEarlyButton.gameObject.SetActive(isPreparation);
+            callEarlyButton.interactable = isPreparation
                                            && waveManager.PreparationTimeLeft > 0.5f
                                            && (GamePauseController.Instance == null || !GamePauseController.Instance.IsPaused);
+        }
 
-        RefreshWaveIntelPanel();
-    }
-
-    void RefreshWaveIntelPanel()
-    {
-        if (waveIntelPanel == null || waveManager == null)
-            return;
-
-        var showIntel = waveManager.State == WaveState.Preparation && waveManager.UpcomingWaveDefinition != null;
-        waveIntelPanel.SetActive(showIntel);
-
-        if (!showIntel)
-            return;
-
-        if (waveIntelTitleText != null)
-            waveIntelTitleText.text = $"Incoming · Wave {waveManager.CurrentWaveNumber}";
-
-        if (waveIntelEnemyText != null)
-            waveIntelEnemyText.text = waveManager.GetUpcomingEnemySummary();
-
-        if (waveIntelHintText != null)
-            waveIntelHintText.text = waveManager.GetUpcomingHint();
+        if (resetButton != null)
+        {
+            var isVictory = waveManager.State == WaveState.Victory;
+            resetButton.gameObject.SetActive(isVictory);
+            resetButton.interactable = isVictory;
+        }
     }
 
     void RefreshTowerButtons()

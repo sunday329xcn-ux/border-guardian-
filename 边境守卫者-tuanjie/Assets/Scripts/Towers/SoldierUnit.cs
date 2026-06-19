@@ -4,8 +4,14 @@ using UnityEngine;
 public static class SoldierRegistry
 {
     static readonly List<SoldierUnit> soldiers = new();
+    static readonly List<SoldierUnit> snapshotBufferA = new();
+    static readonly List<SoldierUnit> snapshotBufferB = new();
+    static int snapshotVersion;
 
     public static IReadOnlyList<SoldierUnit> ActiveSoldiers => soldiers;
+
+    public static IReadOnlyList<SoldierUnit> ActiveSoldiersSnapshot =>
+        RegistrySnapshot.Copy(soldiers, snapshotBufferA, snapshotBufferB, ref snapshotVersion);
 
     public static void Register(SoldierUnit soldier)
     {
@@ -99,7 +105,7 @@ public class SoldierUnit : MonoBehaviour
         EnemyBase best = null;
         var bestDist = radius;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead || enemy.IsFlying || enemy.IgnoresBarracksBlock)
                 continue;

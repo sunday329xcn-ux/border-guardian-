@@ -74,6 +74,7 @@ public class EnemyBase : MonoBehaviour
         enemy.EnemyType = type;
         enemy.spriteRenderer = renderer;
         enemy.ApplyStats(stats);
+        enemy.EnsureSelectionCollider(stats.Scale);
         enemy.Initialize(path);
         EnemyCatalog.AttachBehavior(enemy, type);
         if (stats.IsElite || stats.IsBoss)
@@ -221,6 +222,59 @@ public class EnemyBase : MonoBehaviour
         magicResistReductionEndTime = 0f;
     }
 
+    public void SetSelectedVisual(bool selected)
+    {
+        if (spriteRenderer == null)
+            return;
+
+        spriteRenderer.color = selected
+            ? Color.Lerp(enemyColor, Color.white, 0.35f)
+            : isInvulnerable ? Color.Lerp(enemyColor, Color.white, 0.45f) : enemyColor;
+    }
+
+    public string GetArmorRating()
+    {
+        if (Armor >= 25)
+            return "Very High";
+
+        if (Armor >= 15)
+            return "High";
+
+        if (Armor >= 6)
+            return "Medium";
+
+        return Armor > 0 ? "Low" : "None";
+    }
+
+    public string GetMagicResistRating()
+    {
+        if (MagicResist >= 40)
+            return "Very High";
+
+        if (MagicResist >= 20)
+            return "High";
+
+        if (MagicResist >= 8)
+            return "Medium";
+
+        return MagicResist > 0 ? "Low" : "None";
+    }
+
+    public string GetAttackRating()
+    {
+        return EnemyCatalog.GetThreatRating(EnemyType, leakDamage, stealGoldOnLeak, isBoss, isElite);
+    }
+
+    void EnsureSelectionCollider(float scale)
+    {
+        var collider = GetComponent<CircleCollider2D>();
+        if (collider == null)
+            collider = gameObject.AddComponent<CircleCollider2D>();
+
+        collider.radius = Mathf.Max(0.28f, scale * 0.55f);
+        collider.isTrigger = true;
+    }
+
     public void TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f)
     {
         if (isDead || baseDamage <= 0 || isInvulnerable)
@@ -267,6 +321,7 @@ public class EnemyBase : MonoBehaviour
             return;
 
         isDead = true;
+        EnemySelectionController.DeselectIf(this);
 
         if (!leaked && GameManager.Instance != null)
         {

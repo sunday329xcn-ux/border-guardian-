@@ -35,7 +35,7 @@ public class LevelProgressHudUI : MonoBehaviour
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(28f, -152f);
+        rect.anchoredPosition = new Vector2(28f, -168f);
         rect.sizeDelta = new Vector2(320f, 32f);
         UiDisplaySettings.SnapRectToPixels(rect);
 

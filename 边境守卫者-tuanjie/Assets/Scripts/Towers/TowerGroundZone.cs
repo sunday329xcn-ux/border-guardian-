@@ -56,7 +56,7 @@ public class TowerGroundZone : MonoBehaviour
             return;
         }
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead)
                 continue;

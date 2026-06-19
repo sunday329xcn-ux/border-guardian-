@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -81,6 +82,13 @@ public class TowerBuildController : MonoBehaviour
                 TowerSelectionController.Select(tower);
                 return;
             }
+
+            var enemy = hit.GetComponent<EnemyBase>();
+            if (enemy != null && !enemy.IsDead)
+            {
+                EnemySelectionController.Select(enemy);
+                return;
+            }
         }
 
         foreach (var hit in hits)
@@ -89,12 +97,14 @@ public class TowerBuildController : MonoBehaviour
                 continue;
 
             var slot = hit.GetComponent<BuildSlot>();
-            if (slot == null || slot.IsOccupied)
+            if (slot == null || !slot.CanAcceptBuild())
                 continue;
 
-            if (TowerFactory.Build(buildSelector.SelectedType, slot) != null)
+            var builtTower = TowerFactory.Build(buildSelector.SelectedType, slot);
+            if (builtTower != null)
             {
-                TowerSelectionController.Deselect();
+                TowerSelectionController.Select(builtTower);
+                EnemySelectionController.Deselect();
                 return;
             }
         }
@@ -102,13 +112,18 @@ public class TowerBuildController : MonoBehaviour
         var fallbackSlot = FindBuildSlotAt(worldPoint);
         if (fallbackSlot != null)
         {
-            if (TowerFactory.Build(buildSelector.SelectedType, fallbackSlot) != null)
-                TowerSelectionController.Deselect();
+            var builtTower = TowerFactory.Build(buildSelector.SelectedType, fallbackSlot);
+            if (builtTower != null)
+            {
+                TowerSelectionController.Select(builtTower);
+                EnemySelectionController.Deselect();
+            }
 
             return;
         }
 
         TowerSelectionController.Deselect();
+        EnemySelectionController.Deselect();
     }
 
     static bool IsPointerOverUi()
@@ -116,7 +131,17 @@ public class TowerBuildController : MonoBehaviour
         if (EventSystem.current == null)
             return false;
 
-        return EventSystem.current.IsPointerOverGameObject();
+        if (EventSystem.current.IsPointerOverGameObject())
+            return true;
+
+        var pointerData = new PointerEventData(EventSystem.current)
+        {
+            position = Input.mousePosition
+        };
+
+        var results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+        return results.Count > 0;
     }
 
     Vector3 GetMouseWorldPosition()
@@ -135,7 +160,7 @@ public class TowerBuildController : MonoBehaviour
 
         foreach (var slot in mapGridController.BuildSlots)
         {
-            if (slot == null || slot.IsOccupied)
+            if (slot == null || !slot.CanAcceptBuild())
                 continue;
 
             var offset = slot.transform.position - worldPoint;

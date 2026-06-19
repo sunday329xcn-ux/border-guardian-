@@ -50,6 +50,15 @@ public static class UiDisplaySettings
         image.raycastTarget = true;
     }
 
+    public static void ApplyWhiteSprite(Image image)
+    {
+        if (image == null)
+            return;
+
+        image.sprite = MapGridControllerShared.GetWhiteSprite();
+        image.type = Image.Type.Simple;
+    }
+
     public static void SnapRectToPixels(RectTransform rect)
     {
         if (rect == null)

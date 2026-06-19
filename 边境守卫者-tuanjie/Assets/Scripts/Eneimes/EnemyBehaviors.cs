@@ -16,7 +16,7 @@ public static class EnemyAreaDamage
 {
     public static void DamageEnemiesInRadius(Vector3 center, float radius, int damage, DamageType damageType, EnemyBase exclude = null)
     {
-        foreach (var target in EnemyRegistry.ActiveEnemies)
+        foreach (var target in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (target == null || target.IsDead || target == exclude)
                 continue;
@@ -30,7 +30,7 @@ public static class EnemyAreaDamage
 
     public static void DamageSoldiersInRadius(Vector3 center, float radius, int damage)
     {
-        foreach (var soldier in SoldierRegistry.ActiveSoldiers)
+        foreach (var soldier in SoldierRegistry.ActiveSoldiersSnapshot)
         {
             if (soldier == null || !soldier.IsAlive)
                 continue;
@@ -44,7 +44,7 @@ public static class EnemyAreaDamage
 
     public static void DamageTowersInRadius(Vector3 center, float radius, int damage)
     {
-        foreach (var tower in TowerRegistry.ActiveTowers)
+        foreach (var tower in TowerRegistry.ActiveTowersSnapshot)
         {
             if (tower == null)
                 continue;
@@ -67,7 +67,7 @@ public class WraithBehavior : EnemyBehaviorBase
         if (!killedByPlayer)
             return;
 
-        foreach (var ally in EnemyRegistry.ActiveEnemies)
+        foreach (var ally in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (ally == null || ally.IsDead || ally == enemy)
                 continue;
@@ -155,7 +155,7 @@ public class ShadowPriestBehavior : EnemyBehaviorBase
         EnemyBase best = null;
         var bestScore = float.MaxValue;
 
-        foreach (var candidate in EnemyRegistry.ActiveEnemies)
+        foreach (var candidate in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (candidate == null || candidate.IsDead || candidate == enemy)
                 continue;
@@ -250,7 +250,7 @@ public class TowerBreakerBehavior : EnemyBehaviorBase
         TowerBase best = null;
         var bestDist = float.MaxValue;
 
-        foreach (var tower in TowerRegistry.ActiveTowers)
+        foreach (var tower in TowerRegistry.ActiveTowersSnapshot)
         {
             if (tower == null)
                 continue;

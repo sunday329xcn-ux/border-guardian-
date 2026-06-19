@@ -25,7 +25,7 @@ public class BarracksTower : TowerBase
 
     public static BarracksTower Build(BuildSlot slot)
     {
-        if (!TowerVisualFactory.TryPayAndOccupy(slot, BuildCost))
+        if (!TowerVisualFactory.TryPayForBuild(slot, BuildCost))
         {
             Debug.Log("Not enough gold for Barracks.");
             return null;
@@ -35,6 +35,12 @@ public class BarracksTower : TowerBase
         var tower = towerObject.AddComponent<BarracksTower>();
         tower.normalColor = new Color(0.35f, 0.55f, 0.95f);
         tower.Setup(slot, BuildCost, TowerType.Barracks);
+        if (tower == null)
+        {
+            TowerVisualFactory.RefundBuild(slot, BuildCost);
+            return null;
+        }
+
         return tower;
     }
 
@@ -150,7 +156,7 @@ public class BarracksTower : TowerBase
         if (deathExplosionDamage <= 0)
             return;
 
-        foreach (var enemy in EnemyRegistry.ActiveEnemies)
+        foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
             if (enemy == null || enemy.IsDead)
                 continue;

@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,13 +15,14 @@ public class GameHUD : MonoBehaviour
 
     [Header("Layout")]
     [SerializeField] bool autoLayoutTopLeft = true;
-    [SerializeField] float leftPadding = 28f;
-    [SerializeField] float topPadding = 28f;
-    [SerializeField] float lineHeight = 42f;
+    [SerializeField] float leftPadding = UiDisplaySettings.HudLeftInset;
+    [SerializeField] float topPadding = UiDisplaySettings.HudTopPadding;
+    [SerializeField] float lineHeight = UiDisplaySettings.HudLineHeight;
 
     Image resourceBackground;
 
     bool statusCentered;
+    Coroutine transientStatusRoutine;
 
     void Start()
     {
@@ -28,6 +30,9 @@ public class GameHUD : MonoBehaviour
 
         if (autoLayoutTopLeft)
         {
+            leftPadding = UiDisplaySettings.HudLeftInset;
+            topPadding = UiDisplaySettings.HudTopPadding;
+            lineHeight = UiDisplaySettings.HudLineHeight;
             EnsureResourceBackground();
             ApplyTopLeftLayout();
         }
@@ -66,13 +71,13 @@ public class GameHUD : MonoBehaviour
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = new Vector2(leftPadding - 14f, -topPadding + 10f);
-        rect.sizeDelta = new Vector2(240f, lineHeight * 3f + 22f);
+        rect.anchoredPosition = new Vector2(leftPadding - 12f, -topPadding + 8f);
+        rect.sizeDelta = new Vector2(260f, lineHeight * 3f + 22f);
         UiDisplaySettings.SnapRectToPixels(rect);
 
         resourceBackground = panelObject.GetComponent<Image>();
         resourceBackground.raycastTarget = false;
-        UiDisplaySettings.ApplyPanelBackground(resourceBackground, 0.88f);
+        UiDisplaySettings.ApplyPanelBackground(resourceBackground, UiDisplaySettings.PanelAlpha);
     }
 
     void ApplyTopLeftLayout()
@@ -91,9 +96,10 @@ public class GameHUD : MonoBehaviour
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = new Vector2(leftPadding, -topPadding - lineIndex * lineHeight);
-        rect.sizeDelta = new Vector2(220f, lineHeight - 4f);
+        rect.sizeDelta = new Vector2(240f, lineHeight - 4f);
 
         text.alignment = TextAlignmentOptions.TopLeft;
+        text.margin = new Vector4(4f, 0f, 8f, 0f);
         text.raycastTarget = false;
         UiDisplaySettings.SnapRectToPixels(rect);
     }
@@ -101,9 +107,9 @@ public class GameHUD : MonoBehaviour
     void ApplySharpHudText()
     {
         UiDisplaySettings.ConfigureCanvas(GetComponentInParent<Canvas>());
-        UiDisplaySettings.ApplySharpText(goldText, 28f);
-        UiDisplaySettings.ApplySharpText(diamondText, 28f);
-        UiDisplaySettings.ApplySharpText(livesText, 28f);
+        UiDisplaySettings.ApplyHudBodyText(goldText, UiDisplaySettings.FontSizeTitle);
+        UiDisplaySettings.ApplyHudBodyText(diamondText, UiDisplaySettings.FontSizeTitle);
+        UiDisplaySettings.ApplyHudBodyText(livesText, UiDisplaySettings.FontSizeTitle);
         UiDisplaySettings.ApplySharpText(statusText, 32f);
     }
 
@@ -137,6 +143,27 @@ public class GameHUD : MonoBehaviour
     void ShowGameOver()
     {
         SetStatus("Game Over", true);
+    }
+
+    public void ShowTransientMessage(string message, float durationSeconds = 2.5f)
+    {
+        if (statusText == null)
+            return;
+
+        if (transientStatusRoutine != null)
+            StopCoroutine(transientStatusRoutine);
+
+        SetStatus(message);
+        transientStatusRoutine = StartCoroutine(ClearTransientStatusAfter(durationSeconds));
+    }
+
+    IEnumerator ClearTransientStatusAfter(float durationSeconds)
+    {
+        yield return new WaitForSeconds(durationSeconds);
+        transientStatusRoutine = null;
+
+        if (GameManager.Instance != null && !GameManager.Instance.IsGameOver)
+            SetStatus(string.Empty);
     }
 
     public void SetStatus(string message, bool centerScreen = false)

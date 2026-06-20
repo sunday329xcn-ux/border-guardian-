@@ -21,7 +21,10 @@ public class GamePauseController : MonoBehaviour
         }
 
         Instance = this;
-        Time.timeScale = 1f;
+        EnsureSpeedController();
+        Time.timeScale = GameSpeedController.Instance != null
+            ? GameSpeedController.Instance.CurrentSpeed
+            : 1f;
     }
 
     void Start()
@@ -82,7 +85,11 @@ public class GamePauseController : MonoBehaviour
     {
         var wasPaused = isPaused;
         isPaused = false;
-        Time.timeScale = 1f;
+
+        if (GameSpeedController.Instance != null)
+            GameSpeedController.Instance.ApplySpeedIfRunning();
+        else
+            Time.timeScale = 1f;
 
         if (wasPaused)
             OnPauseChanged?.Invoke(false);
@@ -90,6 +97,22 @@ public class GamePauseController : MonoBehaviour
 
     void HandleGameEnded()
     {
+        GameSpeedController.Instance?.ResetSpeed();
         Resume();
+    }
+
+    static void EnsureSpeedController()
+    {
+        if (GameSpeedController.Instance != null)
+            return;
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.gameObject.AddComponent<GameSpeedController>();
+            return;
+        }
+
+        var speedObject = new GameObject("GameSpeedController");
+        speedObject.AddComponent<GameSpeedController>();
     }
 }

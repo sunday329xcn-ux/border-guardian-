@@ -67,4 +67,16 @@ public static class TowerBuildCatalog
     {
         return type != TowerType.DiamondMine;
     }
+
+    public static float GetPreviewRange(TowerType type) => TowerRangeScaling.GetPreviewAttackRange(type);
+
+    public static bool ShowsCombatRangeRing(TowerType type)
+    {
+        return type != TowerType.DiamondMine;
+    }
+
+    public static string GetPreviewRingLabel(TowerType type)
+    {
+        return type == TowerType.Barracks ? "Rally" : "Range";
+    }
 }

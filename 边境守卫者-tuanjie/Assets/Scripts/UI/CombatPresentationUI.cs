@@ -8,7 +8,7 @@ using UnityEngine.UI;
 /// </summary>
 public class CombatPresentationUI : MonoBehaviour
 {
-    const float ScreenPadding = 24f;
+    const float ScreenPadding = UiDisplaySettings.ScreenPadding;
     const float SpawnBannerDuration = 2.8f;
     const float TowerWarningDuration = 3.2f;
 
@@ -100,6 +100,7 @@ public class CombatPresentationUI : MonoBehaviour
         }
 
         SetTowerWarningVisible(true);
+        CombatFeedbackService.ReportTowerDamaged(tower.transform.position);
     }
 
     void UpdateSpawnBanner()
@@ -236,7 +237,7 @@ public class CombatPresentationUI : MonoBehaviour
         UiDisplaySettings.SnapRectToPixels(rootRect);
 
         var background = hpBarRoot.AddComponent<Image>();
-        UiDisplaySettings.ApplyPanelBackground(background, 0.88f);
+        UiDisplaySettings.ApplyPanelBackground(background, UiDisplaySettings.PanelAlpha);
 
         hpNameText = CreateLabel(hpBarRoot.transform, "BOSS · Ancient Dragon", 18f, TextAlignmentOptions.TopLeft);
         LayoutTopLine(hpNameText.rectTransform, -10f, 22f);

@@ -75,19 +75,131 @@ public static class GameCodexCatalog
         return entries;
     }
 
+    public static IReadOnlyList<CodexEntry> GetMapEntries()
+    {
+        return new[]
+        {
+            BuildMapOverviewEntry(),
+            BuildPlatformTerrainEntry(),
+            BuildForkGateEntry(),
+            BuildTemporaryBlockEntry()
+        };
+    }
+
+    static CodexEntry BuildPlatformTerrainEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Build platforms use color + marker shape to show terrain type.");
+        body.AppendLine("Hover an empty platform to see terrain info before building.");
+        body.AppendLine();
+        body.AppendLine("Types on Grimm Forest:");
+        body.AppendLine("· Standard — gray tile, no marker.");
+        body.AppendLine("· Highland — blue-gray + gold bar · +10% range.");
+        body.AppendLine("· Rune Haste — purple + cyan diamond · +15% attack speed.");
+        body.AppendLine("· Rune Reach — green tint + bar · +10% range.");
+        body.AppendLine("· Rune Link — blue tint + circle · +15% synergy radius.");
+        body.AppendLine("· Arcane Only — rose tile + ring · Arcane towers only.");
+        body.AppendLine("· No Barracks — orange tile + slash · Barracks blocked.");
+        body.AppendLine("· Fragile — red tint + inner square · +15% damage, high risk.");
+
+        return new CodexEntry(
+            "map_platform_terrain",
+            "Platform Terrain",
+            "Standard · special tiles",
+            body.ToString());
+    }
+
+    static CodexEntry BuildMapOverviewEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Grimm Forest (20×14) uses dual spawns, a fork junction, and scenic detours.");
+        body.AppendLine();
+        body.AppendLine("Route flow:");
+        body.AppendLine("· Upper spawn (0,12) — longer northern path.");
+        body.AppendLine("· Lower spawn (0,1) — shorter southern choke.");
+        body.AppendLine("· Both merge at fork gate (10,7), then rejoin at (17,7) → goal (19,7).");
+        body.AppendLine();
+        body.AppendLine("Player tools at the fork:");
+        body.AppendLine("· Fork Gate — choose Upper / Lower / None (central trunk).");
+        body.AppendLine("· Temporary Block — seal a scenic bridge to force detour.");
+        body.AppendLine();
+        body.AppendLine("Interact: click the fork marker or orange block tile on the map to open the control popup.");
+
+        return new CodexEntry(
+            "map_overview",
+            "Grimm Forest Routes",
+            "Dual spawn · fork · scenic branches",
+            body.ToString());
+    }
+
+    static CodexEntry BuildForkGateEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Location: fork junction (10,7).");
+        body.AppendLine();
+        body.AppendLine("Modes (click fork marker at junction):");
+        body.AppendLine("· None (default) — faint cyan marker at junction; all enemies use central trunk.");
+        body.AppendLine("· Upper — north scenic branch; green gate marker at junction.");
+        body.AppendLine("· Lower — south scenic branch; gold gate marker at junction.");
+        body.AppendLine();
+        body.AppendLine("Rules:");
+        body.AppendLine($"· Each switch to a different mode costs {MapRouteController.ForkSwitchGoldCost} gold.");
+        body.AppendLine("· Re-selecting the current mode costs nothing.");
+        body.AppendLine("· Takes effect immediately for newly spawned enemies (prep, spawn, or combat).");
+        body.AppendLine();
+        body.AppendLine("Tips:");
+        body.AppendLine("· None when your central cluster has the DPS.");
+        body.AppendLine("· Upper/Lower to drag waves through isolated platforms or overlapping fields.");
+
+        return new CodexEntry(
+            "map_fork_gate",
+            "Fork Gate",
+            "Upper · Lower · None",
+            body.ToString());
+    }
+
+    static CodexEntry BuildTemporaryBlockEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Seal a scenic bridge to redirect that fork onto the central detour.");
+        body.AppendLine();
+        body.AppendLine("Block points (orange markers on map):");
+        body.AppendLine("· North scenic — cell (13,9) on the upper fork primary path.");
+        body.AppendLine("· South scenic — cell (13,5) on the lower fork primary path.");
+        body.AppendLine();
+        body.AppendLine("Cost & timing:");
+        body.AppendLine($"· {MapRouteController.BlockGoldCost} gold per activation.");
+        body.AppendLine($"· Block lasts {MapRouteController.BlockDurationSeconds:0.#} seconds.");
+        body.AppendLine($"· Cooldown {MapRouteController.BlockCooldownSeconds:0.#}s before the next block.");
+        body.AppendLine();
+        body.AppendLine("Effect:");
+        body.AppendLine("· While active, enemies on that scenic branch use the central detour path.");
+        body.AppendLine("· Only affects enemies spawned after the block starts.");
+        body.AppendLine("· Works best with Fork Gate set to Upper or Lower on that side.");
+        body.AppendLine();
+        body.AppendLine("Click the orange block tile on the map to open the block popup.");
+
+        return new CodexEntry(
+            "map_temp_block",
+            "Temporary Block",
+            "Scenic bridge seal · forced detour",
+            body.ToString());
+    }
+
     static CodexEntry BuildArrowEntry()
     {
         var body = new StringBuilder();
         body.AppendLine("Tag: Marksman");
         body.AppendLine(TowerHpLine);
-        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arrow)}g  ·  Synergy: Volley (+25% vs slowed)");
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arrow)}g  ·  Synergy: Volley (+18% vs slowed)");
+        body.AppendLine("Attack range ×0.8; synergy ring 2.8+ tiles from Lv.3 (not scaled). Lv.5 branches shift synergy.");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 5–8 dmg, 0.6s, range 3.5, hits air");
+        body.AppendLine("Lv.1 — 5–8 dmg, 0.6s, range ~2.6, hits air");
         body.AppendLine("Lv.2 — 80g → 10–14 dmg, 0.4s");
-        body.AppendLine("Lv.3 — 120g → 15–20 dmg, 0.35s, 10% crit ×2");
-        body.AppendLine("Lv.4 — 5 dia → 18–24 dmg, 0.3s, range 4.5, 20% crit");
-        body.AppendLine("Lv.5A Ranger — 10 dia → 24–32 dmg, 0.25s, focus low HP");
-        body.AppendLine("Lv.5B Siege — 10 dia → 38–52 dmg, 1.2s, range 6, line pierce, no air");
+        body.AppendLine("Lv.3 — 120g → 14–19 dmg, 0.35s, 10% crit ×2");
+        body.AppendLine("Lv.4 — 5 dia → 16–22 dmg, 0.32s, ~3.5 range, 18% crit");
+        body.AppendLine("Lv.5A Ranger — 10 dia → 20–27 dmg, 0.28s, longer synergy, focus low HP");
+        body.AppendLine("Lv.5B Siege — 10 dia → 30–42 dmg, 1.35s, long range, line pierce, no air");
 
         return new CodexEntry("arrow", "Arrow Tower", "Marksman · single-target DPS", body.ToString());
     }
@@ -99,12 +211,12 @@ public static class GameCodexCatalog
         body.AppendLine(TowerHpLine);
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Frost)}g  ·  Synergy: Shatter (+ Cannon vs slowed)");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 2–4 magic, 1.2s, range 2.5, slow 40%");
+        body.AppendLine("Lv.1 — 2–4 magic, 1.2s, range ~2.5, slow 40%");
         body.AppendLine("Lv.2 — 100g → 4–7 dmg, slow 60%, 15% freeze 1s");
         body.AppendLine("Lv.3 — 150g → 7–10 dmg, slow 65%, 20% freeze 1.5s");
-        body.AppendLine("Lv.4 — 5 dia → 10–14 dmg, frost ground + stronger freeze");
-        body.AppendLine("Lv.5A Permafrost — 10 dia → 12–16 dmg, larger frost zone 3s");
-        body.AppendLine("Lv.5B Blizzard — 10 dia → 18–26 AoE splash, guaranteed freeze 1.5s");
+        body.AppendLine("Lv.4 — 5 dia → 9–13 dmg, frost ground + stronger freeze");
+        body.AppendLine("Lv.5A Permafrost — 10 dia → 11–15 dmg, larger frost zone; synergy range up");
+        body.AppendLine("Lv.5B Blizzard — 10 dia → 14–20 AoE splash; shorter attack & synergy range");
 
         return new CodexEntry("frost", "Frost Tower", "Ice · slow & control", body.ToString());
     }
@@ -117,11 +229,11 @@ public static class GameCodexCatalog
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Cannon)}g  ·  Synergy: Shatter / Breach");
         body.AppendLine();
         body.AppendLine("Lv.1 — 11–17 dmg, 2.0s, splash ×3, no air");
-        body.AppendLine("Lv.2 — 120g → 18–28 dmg, 0.3s stun");
-        body.AppendLine("Lv.3 — 180g → 24–36 dmg, wider splash, 0.5s stun");
-        body.AppendLine("Lv.4 — 6 dia → 28–40 dmg, fire ground 6 DPS");
-        body.AppendLine("Lv.5A Incendiary — 12 dia → 34–48 dmg, stronger fire ground");
-        body.AppendLine("Lv.5B Thunder — 12 dia → 48–68 dmg, range 5.5, focus high HP, −8 armor");
+        body.AppendLine("Lv.2 — 120g → 17–26 dmg, 0.3s stun");
+        body.AppendLine("Lv.3 — 180g → 22–34 dmg, wider splash, 0.5s stun");
+        body.AppendLine("Lv.4 — 6 dia → 26–38 dmg, fire ground 5 DPS");
+        body.AppendLine("Lv.5A Incendiary — 12 dia → 30–44 dmg, stronger fire ground");
+        body.AppendLine("Lv.5B Thunder — 12 dia → 42–60 dmg, long range, focus high HP, −7 armor");
 
         return new CodexEntry("cannon", "Cannon Tower", "Explosive · AoE burst", body.ToString());
     }
@@ -134,11 +246,11 @@ public static class GameCodexCatalog
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Arcane)}g  ·  Synergy: Breach / Ward");
         body.AppendLine();
         body.AppendLine("Lv.1 — 10–14 magic, 0.9s, 20% armor pen, hits air");
-        body.AppendLine("Lv.2 — 110g → 16–22 dmg, 35% armor pen");
-        body.AppendLine("Lv.3 — 150g → 22–30 dmg, 45% armor pen");
-        body.AppendLine("Lv.4 — 5 dia → 26–34 dmg, steal 2 armor per hit");
-        body.AppendLine("Lv.5A Destroyer — 10 dia → 30–40 dmg, steal armor & buff allies +2 dmg");
-        body.AppendLine("Lv.5B Void Rift — 10 dia → 15–22 dmg + void pulse every 8s");
+        body.AppendLine("Lv.2 — 110g → 15–21 dmg, 35% armor pen");
+        body.AppendLine("Lv.3 — 150g → 20–28 dmg, 45% armor pen");
+        body.AppendLine("Lv.4 — 5 dia → 24–32 dmg, steal 2 armor per hit");
+        body.AppendLine("Lv.5A Destroyer — 10 dia → 27–36 dmg, steal armor & buff allies +2 dmg; shorter range");
+        body.AppendLine("Lv.5B Void Rift — 10 dia → 14–20 dmg + void pulse every 8s; tighter synergy");
 
         return new CodexEntry("arcane", "Arcane Tower", "Arcane · armor shred", body.ToString());
     }
@@ -150,12 +262,12 @@ public static class GameCodexCatalog
         body.AppendLine(TowerHpLine);
         body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Barracks)}g  ·  Synergy: Ward (+ Arcane armor & dmg)");
         body.AppendLine();
-        body.AppendLine("Lv.1 — 2 soldiers, 80 HP, 2–4 dmg, rally 1.8, respawn 8s");
+        body.AppendLine("Lv.1 — 2 soldiers, 80 HP, 2–4 dmg, rally ~1.4, respawn 8s (no synergy until Lv.3)");
         body.AppendLine("Lv.2 — 90g → 3 soldiers, 140 HP, death burst 10");
-        body.AppendLine("Lv.3 — 130g → 200 HP, 9–12 dmg, rally 2.8, burst 20");
+        body.AppendLine("Lv.3 — 130g → 200 HP, 9–12 dmg, rally ~2.1, burst 20");
         body.AppendLine("Lv.4 — 5 dia → 280 HP, 14–18 dmg, burst 30");
-        body.AppendLine("Lv.5A Paladin — 12 dia → 2 knights 400 HP, 20–26 dmg, rally 4.0");
-        body.AppendLine("Lv.5B Assassin — 10 dia → 4 assassins 150 HP, 28–36 dmg, rally 4.0");
+        body.AppendLine("Lv.5A Paladin — 12 dia → 2 knights 400 HP, 20–26 dmg, rally ~3.1");
+        body.AppendLine("Lv.5B Assassin — 10 dia → 4 assassins 150 HP, 28–36 dmg, rally ~2.9");
 
         return new CodexEntry("barracks", "Barracks", "Guardian · melee block", body.ToString());
     }

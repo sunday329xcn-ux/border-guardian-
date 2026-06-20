@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// </summary>
 public class GameUiController : MonoBehaviour
 {
-    const float ScreenPadding = 24f;
+    const float ScreenPadding = UiDisplaySettings.ScreenPadding;
     const float BuildBarHeight = 104f;
 
     [SerializeField] WaveManager waveManager;
@@ -20,6 +20,8 @@ public class GameUiController : MonoBehaviour
     TextMeshProUGUI waveDetailText;
     Button callEarlyButton;
     Button resetButton;
+    GameObject buildPanelRoot;
+    GameObject wavePanelRoot;
     readonly Dictionary<TowerType, Image> towerButtonImages = new();
     GamePauseController boundPauseController;
 
@@ -52,8 +54,14 @@ public class GameUiController : MonoBehaviour
         if (GetComponent<PauseMenuUI>() == null)
             gameObject.AddComponent<PauseMenuUI>();
 
+        if (GetComponent<GameplayExitUI>() == null)
+            gameObject.AddComponent<GameplayExitUI>();
+
         if (GetComponent<CombatPresentationUI>() == null)
             gameObject.AddComponent<CombatPresentationUI>();
+
+        if (GetComponent<CombatFeedbackService>() == null)
+            gameObject.AddComponent<CombatFeedbackService>();
 
         if (GetComponent<VictoryResultUI>() == null)
             gameObject.AddComponent<VictoryResultUI>();
@@ -64,11 +72,28 @@ public class GameUiController : MonoBehaviour
         if (GetComponent<CodexMenuUI>() == null)
             gameObject.AddComponent<CodexMenuUI>();
 
+        if (GetComponent<RouteControlUI>() == null)
+            gameObject.AddComponent<RouteControlUI>();
+
+        if (GetComponent<PlatformTerrainInfoUI>() == null)
+            gameObject.AddComponent<PlatformTerrainInfoUI>();
+
         if (GetComponent<TowerInfoPanelUI>() == null)
             gameObject.AddComponent<TowerInfoPanelUI>();
 
         if (GetComponent<EnemyInfoPanelUI>() == null)
             gameObject.AddComponent<EnemyInfoPanelUI>();
+
+        if (GetComponent<MainMenuUI>() == null)
+            gameObject.AddComponent<MainMenuUI>();
+
+        if (GetComponent<WaveTimelineUI>() == null)
+            gameObject.AddComponent<WaveTimelineUI>();
+
+        if (GetComponent<TowerBuildHotkeys>() == null)
+            gameObject.AddComponent<TowerBuildHotkeys>();
+
+        EnsureRangePreviewController();
 
         if (waveManager != null)
             waveManager.OnWaveStateChanged += RefreshWaveUi;
@@ -77,10 +102,11 @@ public class GameUiController : MonoBehaviour
 
         if (buildSelector != null)
         {
-            buildSelector.OnSelectionChanged += _ => RefreshTowerButtons();
+            buildSelector.OnSelectionChanged += HandleBuildSelectionChanged;
             RefreshTowerButtons();
         }
 
+        BuildSlotSelectionController.OnSelectionChanged += HandleBuildSlotSelectionChanged;
         RefreshWaveUi();
     }
 
@@ -91,6 +117,21 @@ public class GameUiController : MonoBehaviour
 
         if (boundPauseController != null)
             boundPauseController.OnPauseChanged -= HandlePauseChanged;
+
+        if (buildSelector != null)
+            buildSelector.OnSelectionChanged -= HandleBuildSelectionChanged;
+
+        BuildSlotSelectionController.OnSelectionChanged -= HandleBuildSlotSelectionChanged;
+    }
+
+    void HandleBuildSelectionChanged(TowerType _)
+    {
+        RefreshTowerButtons();
+    }
+
+    void HandleBuildSlotSelectionChanged(BuildSlot _)
+    {
+        RefreshTowerButtons();
     }
 
     void TryBindPauseEvents()
@@ -124,6 +165,7 @@ public class GameUiController : MonoBehaviour
     void CreateBuildPanel()
     {
         var panel = CreateUiObject("BuildPanel", transform);
+        buildPanelRoot = panel;
         var panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0f, 0f);
         panelRect.anchorMax = new Vector2(1f, 0f);
@@ -151,10 +193,24 @@ public class GameUiController : MonoBehaviour
             var label = $"{name}\n{cost}g";
 
             var capturedType = towerType;
-            var buttonObject = CreateButton(panel.transform, label, new Vector2(104f, 72f), 16f, () =>
+            var buttonObject = CreateButton(panel.transform, label, new Vector2(104f, 72f), UiDisplaySettings.FontSizeBody, null);
+            var dragHandler = buttonObject.AddComponent<TowerBuildDragHandler>();
+            dragHandler.Initialize(capturedType, buildSelector);
+
+            var hoverHandler = buttonObject.AddComponent<TowerBuildButtonHover>();
+            hoverHandler.Initialize(capturedType);
+
+            var button = buttonObject.GetComponent<Button>();
+            button.onClick.AddListener(() =>
             {
+                if (dragHandler.ConsumeClickSuppression())
+                    return;
+
                 if (buildSelector != null)
                     buildSelector.Select(capturedType);
+
+                if (BuildSlotSelectionController.Selected != null)
+                    TowerBuildService.TryBuild(capturedType, BuildSlotSelectionController.Selected);
             });
 
             towerButtonImages[towerType] = buttonObject.GetComponent<Image>();
@@ -164,6 +220,7 @@ public class GameUiController : MonoBehaviour
     void CreateWavePanel()
     {
         var panel = CreateUiObject("WavePanel", transform);
+        wavePanelRoot = panel;
         var panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(1f, 1f);
         panelRect.anchorMax = new Vector2(1f, 1f);
@@ -173,7 +230,7 @@ public class GameUiController : MonoBehaviour
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panel.AddComponent<Image>();
-        UiDisplaySettings.ApplyPanelBackground(background, 0.9f);
+        UiDisplaySettings.ApplyPanelBackground(background, UiDisplaySettings.PanelAlpha);
 
         var layout = panel.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(16, 16, 14, 14);
@@ -184,11 +241,11 @@ public class GameUiController : MonoBehaviour
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
 
-        waveTitleText = CreateLabel(panel.transform, "Wave 1 / 10", 24f, TextAlignmentOptions.TopLeft);
+        waveTitleText = CreateLabel(panel.transform, "Wave 1 / 10", UiDisplaySettings.FontSizeTitle, TextAlignmentOptions.TopLeft);
         ConfigureLayoutElement(waveTitleText.rectTransform, 28f);
 
-        waveDetailText = CreateLabel(panel.transform, "Next in 15s", 20f, TextAlignmentOptions.TopLeft);
-        waveDetailText.color = new Color(0.85f, 0.9f, 0.85f);
+        waveDetailText = CreateLabel(panel.transform, "Next in 15s", UiDisplaySettings.FontSizeBody, TextAlignmentOptions.TopLeft);
+        UiDisplaySettings.ApplyHudBodyText(waveDetailText, UiDisplaySettings.FontSizeBody);
         ConfigureLayoutElement(waveDetailText.rectTransform, 24f);
 
         callEarlyButton = CreateButton(panel.transform, "Call Early (+gold)", new Vector2(0f, 40f), 18f, () =>
@@ -257,9 +314,9 @@ public class GameUiController : MonoBehaviour
                 continue;
             }
 
-            pair.Value.color = pair.Key == buildSelector.SelectedType
-                ? new Color(0.28f, 0.48f, 0.28f, 0.95f)
-                : new Color(0.2f, 0.2f, 0.2f, 0.85f);
+            UiDisplaySettings.ApplyBuildButton(
+                pair.Value,
+                buildSelector.IsBuildBarActive && pair.Key == buildSelector.SelectedType);
         }
     }
 
@@ -301,7 +358,7 @@ public class GameUiController : MonoBehaviour
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = go.AddComponent<Image>();
-        image.color = new Color(0.2f, 0.2f, 0.2f, 0.85f);
+        UiDisplaySettings.ApplyBuildButton(image, selected: false);
 
         var button = go.AddComponent<Button>();
         button.targetGraphic = image;
@@ -317,5 +374,41 @@ public class GameUiController : MonoBehaviour
         textRect.offsetMax = new Vector2(-6f, -4f);
 
         return go;
+    }
+
+    public void SetGameplayVisible(bool visible)
+    {
+        if (buildPanelRoot != null)
+            buildPanelRoot.SetActive(visible);
+
+        if (wavePanelRoot != null)
+            wavePanelRoot.SetActive(visible);
+
+        SetChildComponentVisible<WaveTimelineUI>(visible);
+        SetChildComponentVisible<LevelProgressHudUI>(visible);
+        SetChildComponentVisible<PauseMenuUI>(visible);
+        SetChildComponentVisible<GameplayExitUI>(visible);
+        SetChildComponentVisible<CombatPresentationUI>(visible);
+        SetChildComponentVisible<WaveSpawnHintUI>(visible);
+        SetChildComponentVisible<TowerInfoPanelUI>(visible);
+        SetChildComponentVisible<EnemyInfoPanelUI>(visible);
+        SetChildComponentVisible<TowerBuildHotkeys>(visible);
+        SetChildComponentVisible<VictoryResultUI>(visible);
+    }
+
+    void SetChildComponentVisible<T>(bool visible) where T : Behaviour
+    {
+        var component = GetComponent<T>();
+        if (component != null)
+            component.enabled = visible;
+    }
+
+    void EnsureRangePreviewController()
+    {
+        var map = FindObjectOfType<MapGridController>();
+        if (map == null || map.GetComponent<TowerRangePreviewController>() != null)
+            return;
+
+        map.gameObject.AddComponent<TowerRangePreviewController>();
     }
 }

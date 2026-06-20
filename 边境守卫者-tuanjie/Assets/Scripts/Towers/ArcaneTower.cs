@@ -33,28 +33,29 @@ public class ArcaneTower : CombatTowerBase
         switch (level)
         {
             case 1:
-                minDamage = 10; maxDamage = 14; attackInterval = 0.9f; range = 3.5f; armorPenetration = 20f;
+                minDamage = 10; maxDamage = 14; attackInterval = 0.9f; armorPenetration = 20f;
                 break;
             case 2:
-                minDamage = 16; maxDamage = 22; attackInterval = 0.9f; range = 3.5f; armorPenetration = 35f;
+                minDamage = 15; maxDamage = 21; attackInterval = 0.9f; armorPenetration = 35f;
                 break;
             case 3:
-                minDamage = 22; maxDamage = 30; attackInterval = 0.85f; range = 3.5f; armorPenetration = 45f;
+                minDamage = 20; maxDamage = 28; attackInterval = 0.88f; armorPenetration = 45f;
                 break;
             case 4:
-                minDamage = 26; maxDamage = 34; attackInterval = 0.8f; range = 3.5f; armorPenetration = 45f; armorStealPerHit = 2;
+                minDamage = 24; maxDamage = 32; attackInterval = 0.82f; armorPenetration = 45f; armorStealPerHit = 2;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 30; maxDamage = 40; attackInterval = 0.75f; range = 3.5f; armorPenetration = 45f;
+                minDamage = 27; maxDamage = 36; attackInterval = 0.78f; armorPenetration = 45f;
                 armorStealPerHit = 2; destroyerAllyBonus = 2;
                 break;
             case 5 when branch == TowerBranch.BranchB:
-                minDamage = 15; maxDamage = 22; attackInterval = 1.2f; range = 3.5f;
+                minDamage = 14; maxDamage = 20; attackInterval = 1.25f;
                 voidPulseCooldown = 8f;
                 break;
         }
 
         transform.localScale = Vector3.one * (0.72f + level * 0.03f);
+        TowerRangeScaling.ApplyTo(this);
     }
 
     void ResetCombatModifiers()

@@ -79,6 +79,10 @@ public class MapEnvironmentController : MonoBehaviour
 
     public bool TryHandleClick(Vector3 worldPoint)
     {
+        var routeController = GetComponent<MapRouteController>();
+        if (routeController != null && routeController.TryHandleClick(worldPoint))
+            return true;
+
         if (TryPlaceHunterTrap(worldPoint))
             return true;
 

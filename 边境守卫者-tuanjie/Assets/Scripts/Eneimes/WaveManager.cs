@@ -15,7 +15,7 @@ public class WaveManager : MonoBehaviour
 {
     [SerializeField] MapGridController mapGridController;
     [SerializeField] LevelId currentLevel = LevelId.GrimmForest;
-    [SerializeField] int earlyStartBaseBonus = 10;
+    [SerializeField] int earlyStartBaseBonus = 14;
     [SerializeField] float preparationCountdown = 15f;
 
     Coroutine waveRoutine;
@@ -23,22 +23,40 @@ public class WaveManager : MonoBehaviour
     bool spawnFinished;
     int currentWaveIndex;
     int totalWaves = GrimmForestWaves.TotalWaves;
+    int currentWaveTotalEnemies;
+    int currentWaveSpawnedEnemies;
+    bool gameplayStarted;
 
     public WaveState State { get; private set; } = WaveState.Preparation;
     public LevelId CurrentLevelId => currentLevel;
     public int CurrentWaveNumber => currentWaveIndex + 1;
     public int TotalWaves => totalWaves;
     public float PreparationTimeLeft => preparationTimer;
+    public int CurrentWaveTotalEnemies => currentWaveTotalEnemies;
+    public int CurrentWaveSpawnedEnemies => currentWaveSpawnedEnemies;
+    public float WaveSpawnProgress =>
+        currentWaveTotalEnemies <= 0 ? 0f : currentWaveSpawnedEnemies / (float)currentWaveTotalEnemies;
     public WaveDefinition UpcomingWaveDefinition =>
         currentWaveIndex >= totalWaves ? null : GrimmForestWaves.GetWave(currentWaveIndex + 1);
 
     public event Action OnWaveStateChanged;
+    public event Action OnWaveSpawnProgressChanged;
 
     void Start()
     {
         if (mapGridController == null)
             mapGridController = FindObjectOfType<MapGridController>();
 
+        if (MainMenuUI.IsSessionStarted)
+            StartGameplay();
+    }
+
+    public void StartGameplay()
+    {
+        if (gameplayStarted)
+            return;
+
+        gameplayStarted = true;
         BeginPreparation();
     }
 
@@ -91,7 +109,7 @@ public class WaveManager : MonoBehaviour
         if (GameManager.Instance == null)
             return;
 
-        var bonus = earlyStartBaseBonus + CurrentWaveNumber * 2;
+        var bonus = earlyStartBaseBonus + CurrentWaveNumber * 3;
         GameManager.Instance.AddGold(bonus);
         preparationTimer = 0f;
         StartNextWave();
@@ -106,10 +124,14 @@ public class WaveManager : MonoBehaviour
         }
 
         State = WaveState.Spawning;
+        CombatStatsTracker.MarkCombatStarted();
         spawnFinished = false;
         OnWaveStateChanged?.Invoke();
 
         var wave = GrimmForestWaves.GetWave(waveIndex + 1);
+        currentWaveTotalEnemies = WavePreviewHelper.CountTotalEnemies(wave);
+        currentWaveSpawnedEnemies = 0;
+        OnWaveSpawnProgressChanged?.Invoke();
         var spawnCounter = 0;
 
         foreach (var group in wave.groups)
@@ -123,10 +145,22 @@ public class WaveManager : MonoBehaviour
                     yield break;
 
                 var spawnIndex = spawnCounter % 2;
-                var takeUpperFork = UnityEngine.Random.value > 0.5f;
-                var route = mapGridController.GetSpawnRoute(spawnIndex, takeUpperFork);
+                var routeControl = mapGridController.Route;
+                ForkBranchChoice branch;
+                if (routeControl != null)
+                    branch = routeControl.ResolveForkBranch(spawnCounter);
+                else
+                    branch = ForkBranchChoice.Central;
+
+                var route = routeControl != null
+                    ? routeControl.GetRoute(spawnIndex, branch)
+                    : mapGridController.GetSpawnRoute(
+                        spawnIndex,
+                        branch == ForkBranchChoice.UpperScenic);
                 EnemyBase.Spawn(group.enemyType, route, route.StartPoint);
                 spawnCounter++;
+                currentWaveSpawnedEnemies++;
+                OnWaveSpawnProgressChanged?.Invoke();
 
                 if (i < group.count - 1 && group.spawnInterval > 0f)
                     yield return new WaitForSeconds(group.spawnInterval);
@@ -146,7 +180,7 @@ public class WaveManager : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.AddGold(completedWave * 5);
+            GameManager.Instance.AddGold(completedWave * 8);
 
             if (completedWave >= 4)
                 GameManager.Instance.AddDiamonds(1);
@@ -169,6 +203,8 @@ public class WaveManager : MonoBehaviour
 
     void ShowVictoryResult()
     {
+        CombatStatsTracker.MarkCombatEnded();
+
         var gameManager = GameManager.Instance;
         if (gameManager == null)
         {
@@ -213,7 +249,8 @@ public class WaveManager : MonoBehaviour
         return State switch
         {
             WaveState.Preparation => $"Next in {Mathf.CeilToInt(preparationTimer)}s",
-            WaveState.Spawning => "Spawning enemies...",
+            WaveState.Spawning => $"Spawning {Mathf.RoundToInt(WaveSpawnProgress * 100f)}%",
+            WaveState.Combat when currentWaveTotalEnemies > 0 => $"Wave {CurrentWaveNumber}: 100% spawned",
             WaveState.Combat => "In combat",
             WaveState.Victory => "All waves cleared",
             _ => string.Empty
@@ -260,6 +297,7 @@ public class WaveManager : MonoBehaviour
     public void ResetLevel()
     {
         Time.timeScale = 1f;
+        MainMenuUI.MarkSessionStarted();
 
         if (GamePauseController.Instance != null)
             GamePauseController.Instance.Resume();

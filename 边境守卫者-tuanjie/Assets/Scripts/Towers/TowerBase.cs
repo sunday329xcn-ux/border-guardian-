@@ -19,6 +19,7 @@ public abstract class TowerBase : MonoBehaviour
     protected TowerBranch branch = TowerBranch.None;
     protected int maxTowerHealth = 50;
     protected int currentTowerHealth;
+    protected float synergyRange = 2.5f;
 
     public TowerType TowerType { get; protected set; }
     public int Level => level;
@@ -27,6 +28,8 @@ public abstract class TowerBase : MonoBehaviour
     public int TotalDiamondSpent => totalDiamondSpent;
     public BuildSlot OccupiedSlot => occupiedSlot;
     public float Range => range;
+    public float SynergyRange => synergyRange;
+    public bool HasSynergyUnlocked => level >= TowerRangeScaling.SynergyUnlockLevel;
     public int CurrentTowerHealth => currentTowerHealth;
     public int MaxTowerHealth => maxTowerHealth;
 
@@ -56,7 +59,9 @@ public abstract class TowerBase : MonoBehaviour
 
         EnsureSelectionCollider();
         ApplyLevelStats();
+        PlatformTerrainCatalog.ApplyTerrainBonuses(this, slot.TerrainType);
         ApplyTowerHealthForLevel();
+        RefreshPresentation();
         OnSetupComplete();
     }
 
@@ -136,6 +141,7 @@ public abstract class TowerBase : MonoBehaviour
         level++;
         ApplyLevelStats();
         ApplyTowerHealthForLevel();
+        RefreshPresentation();
         return true;
     }
 
@@ -152,6 +158,7 @@ public abstract class TowerBase : MonoBehaviour
         level = 4;
         ApplyLevelStats();
         ApplyTowerHealthForLevel();
+        RefreshPresentation();
         return true;
     }
 
@@ -169,6 +176,7 @@ public abstract class TowerBase : MonoBehaviour
         level = 5;
         ApplyLevelStats();
         ApplyTowerHealthForLevel();
+        RefreshPresentation();
         return true;
     }
 
@@ -247,6 +255,58 @@ public abstract class TowerBase : MonoBehaviour
 
     public int GetSellRefund() => totalGoldSpent / 2;
 
+    public void SetRanges(float attackRange, float synergyActivationRange)
+    {
+        range = attackRange;
+        synergyRange = synergyActivationRange;
+    }
+
+    public virtual void ApplyTerrainModifiers(PlatformTerrainType terrain)
+    {
+        switch (terrain)
+        {
+            case PlatformTerrainType.Highland:
+            case PlatformTerrainType.RuneRange:
+                MultiplyRange(1.10f);
+                break;
+            case PlatformTerrainType.RuneAttackSpeed:
+                MultiplyAttackSpeed(1.15f);
+                break;
+            case PlatformTerrainType.RuneSynergy:
+                MultiplySynergyRange(1.15f);
+                break;
+            case PlatformTerrainType.Fragile:
+                ApplyFragileDamageBonus();
+                break;
+        }
+    }
+
+    protected void MultiplyRange(float multiplier)
+    {
+        if (multiplier <= 0f)
+            return;
+
+        range *= multiplier;
+    }
+
+    protected void MultiplyAttackSpeed(float multiplier)
+    {
+        if (multiplier <= 0f)
+            return;
+
+        attackInterval /= multiplier;
+    }
+
+    protected void MultiplySynergyRange(float multiplier)
+    {
+        if (multiplier <= 0f)
+            return;
+
+        synergyRange *= multiplier;
+    }
+
+    protected virtual void ApplyFragileDamageBonus() { }
+
     public void SetSelectedVisual(bool selected)
     {
         if (spriteRenderer == null)
@@ -255,6 +315,14 @@ public abstract class TowerBase : MonoBehaviour
         spriteRenderer.color = selected
             ? Color.Lerp(normalColor, Color.white, 0.35f)
             : normalColor;
+    }
+
+    protected virtual void RefreshPresentation()
+    {
+        transform.localScale = Vector3.one * (0.64f + level * 0.036f);
+
+        if (spriteRenderer != null && TowerSelectionController.Selected != this)
+            spriteRenderer.color = normalColor;
     }
 
     protected abstract void ApplyLevelStats();

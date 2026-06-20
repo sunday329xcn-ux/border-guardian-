@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class EnemyBase : MonoBehaviour
@@ -32,6 +33,7 @@ public class EnemyBase : MonoBehaviour
     bool isBlocked;
     bool isInvulnerable;
     float rootEndTime;
+    Coroutine hitFlashRoutine;
 
     public EnemyType EnemyType { get; private set; }
     public WaypointPath SpawnPath => spawnPath;
@@ -50,6 +52,7 @@ public class EnemyBase : MonoBehaviour
     public bool IsRooted => Time.time < rootEndTime;
     public bool IsStunned => Time.time < stunEndTime;
     public float PathProgress => pathFollower != null ? pathFollower.PathProgress : 0f;
+    public Color DisplayColor => enemyColor;
 
     public void SetBlocked(bool blocked)
     {
@@ -109,7 +112,7 @@ public class EnemyBase : MonoBehaviour
 
     void ApplyStats(EnemyStats stats)
     {
-        maxHealth = stats.MaxHealth;
+        maxHealth = GameDifficultyService.ScaleEnemyHealth(stats.MaxHealth);
         currentArmor = stats.Armor;
         armor = stats.Armor;
         magicResist = stats.MagicResist;
@@ -159,7 +162,7 @@ public class EnemyBase : MonoBehaviour
         if (isDead || amount <= 0)
             return;
 
-        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
     }
 
     public void ApplyRoot(float duration)
@@ -275,10 +278,10 @@ public class EnemyBase : MonoBehaviour
         collider.isTrigger = true;
     }
 
-    public void TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f)
+    public int TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f, bool isCrit = false)
     {
         if (isDead || baseDamage <= 0 || isInvulnerable)
-            return;
+            return 0;
 
         var effectiveArmor = Mathf.Max(0, currentArmor - Mathf.RoundToInt(armorPenetration));
         var finalDamage = damageType switch
@@ -289,9 +292,43 @@ public class EnemyBase : MonoBehaviour
             _ => baseDamage
         };
 
+        if (finalDamage <= 0)
+            return 0;
+
         currentHealth -= finalDamage;
+
         if (currentHealth <= 0)
+        {
+            currentHealth = 0;
+            CombatFeedbackService.ReportEnemyDamaged(this, finalDamage, damageType, isCrit);
             Die(false);
+            return finalDamage;
+        }
+
+        CombatFeedbackService.ReportEnemyDamaged(this, finalDamage, damageType, isCrit);
+        return finalDamage;
+    }
+
+    public void PlayHitFlash()
+    {
+        if (spriteRenderer == null || isDead)
+            return;
+
+        if (hitFlashRoutine != null)
+            StopCoroutine(hitFlashRoutine);
+
+        hitFlashRoutine = StartCoroutine(HitFlashRoutine());
+    }
+
+    IEnumerator HitFlashRoutine()
+    {
+        spriteRenderer.color = Color.Lerp(enemyColor, Color.white, 0.75f);
+        yield return new WaitForSecondsRealtime(0.05f);
+
+        if (spriteRenderer != null && !isDead)
+            spriteRenderer.color = isInvulnerable ? Color.Lerp(enemyColor, Color.white, 0.45f) : enemyColor;
+
+        hitFlashRoutine = null;
     }
 
     public void ReduceArmor(int amount)
@@ -322,6 +359,7 @@ public class EnemyBase : MonoBehaviour
 
         isDead = true;
         EnemySelectionController.DeselectIf(this);
+        CombatFeedbackService.ReportEnemyDeath(this, goldReward, diamondReward, leaked);
 
         if (!leaked && GameManager.Instance != null)
         {

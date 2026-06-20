@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class TowerBuildController : MonoBehaviour
 {
@@ -24,6 +22,9 @@ public class TowerBuildController : MonoBehaviour
 
     void Update()
     {
+        if (TowerBuildDragHandler.IsDragging)
+            return;
+
         if (!Input.GetMouseButtonDown(0))
             return;
 
@@ -33,10 +34,10 @@ public class TowerBuildController : MonoBehaviour
         if (GamePauseController.Instance != null && GamePauseController.Instance.IsPaused)
             return;
 
-        if (ignoreUiClicks && IsPointerOverUi())
+        if (ignoreUiClicks && UiInputUtility.IsPointerOverUi())
             return;
 
-        if (mainCamera == null || mapGridController == null || buildSelector == null)
+        if (mainCamera == null || mapGridController == null)
             return;
 
         var worldPoint = GetMouseWorldPosition();
@@ -79,6 +80,7 @@ public class TowerBuildController : MonoBehaviour
             var tower = hit.GetComponent<TowerBase>();
             if (tower != null)
             {
+                BuildSlotSelectionController.Deselect();
                 TowerSelectionController.Select(tower);
                 return;
             }
@@ -100,48 +102,30 @@ public class TowerBuildController : MonoBehaviour
             if (slot == null || !slot.CanAcceptBuild())
                 continue;
 
-            var builtTower = TowerFactory.Build(buildSelector.SelectedType, slot);
-            if (builtTower != null)
-            {
-                TowerSelectionController.Select(builtTower);
-                EnemySelectionController.Deselect();
-                return;
-            }
-        }
-
-        var fallbackSlot = FindBuildSlotAt(worldPoint);
-        if (fallbackSlot != null)
-        {
-            var builtTower = TowerFactory.Build(buildSelector.SelectedType, fallbackSlot);
-            if (builtTower != null)
-            {
-                TowerSelectionController.Select(builtTower);
-                EnemySelectionController.Deselect();
-            }
-
+            BuildSlotSelectionController.Select(slot);
+            EnemySelectionController.Deselect();
             return;
         }
 
-        TowerSelectionController.Deselect();
-        EnemySelectionController.Deselect();
+        var fallbackSlot = BuildSlotPlacementUtility.FindBuildSlotAt(mapGridController, worldPoint, clickRadius);
+        if (fallbackSlot != null && fallbackSlot.CanAcceptBuild())
+        {
+            BuildSlotSelectionController.Select(fallbackSlot);
+            EnemySelectionController.Deselect();
+            return;
+        }
+
+        ClearWorldSelection();
     }
 
-    static bool IsPointerOverUi()
+    void ClearWorldSelection()
     {
-        if (EventSystem.current == null)
-            return false;
+        BuildSlotSelectionController.Deselect();
+        TowerSelectionController.Deselect();
+        EnemySelectionController.Deselect();
 
-        if (EventSystem.current.IsPointerOverGameObject())
-            return true;
-
-        var pointerData = new PointerEventData(EventSystem.current)
-        {
-            position = Input.mousePosition
-        };
-
-        var results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(pointerData, results);
-        return results.Count > 0;
+        if (buildSelector != null)
+            buildSelector.ClearBuildSelection();
     }
 
     Vector3 GetMouseWorldPosition()
@@ -151,28 +135,5 @@ public class TowerBuildController : MonoBehaviour
         var worldPoint = mainCamera.ScreenToWorldPoint(screenPoint);
         worldPoint.z = 0f;
         return worldPoint;
-    }
-
-    BuildSlot FindBuildSlotAt(Vector3 worldPoint)
-    {
-        BuildSlot closestSlot = null;
-        var closestDistanceSqr = clickRadius * clickRadius;
-
-        foreach (var slot in mapGridController.BuildSlots)
-        {
-            if (slot == null || !slot.CanAcceptBuild())
-                continue;
-
-            var offset = slot.transform.position - worldPoint;
-            offset.z = 0f;
-            var distanceSqr = offset.sqrMagnitude;
-            if (distanceSqr > closestDistanceSqr)
-                continue;
-
-            closestDistanceSqr = distanceSqr;
-            closestSlot = slot;
-        }
-
-        return closestSlot;
     }
 }

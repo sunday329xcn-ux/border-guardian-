@@ -54,7 +54,7 @@ public class EnemyInfoPanelUI : MonoBehaviour
 
         titleText.text = EnemyCatalog.GetDisplayName(enemy.EnemyType);
         detailText.text =
-            $"HP: {enemy.CurrentHealth} / {enemy.MaxHealth}\n" +
+            $"HP: {Mathf.Clamp(enemy.CurrentHealth, 0, enemy.MaxHealth)} / {enemy.MaxHealth}\n" +
             $"Armor: {enemy.GetArmorRating()} ({enemy.Armor})\n" +
             $"Magic Resist: {enemy.GetMagicResistRating()} ({enemy.MagicResist})\n" +
             $"Threat: {enemy.GetAttackRating()}";

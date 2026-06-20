@@ -500,7 +500,7 @@ MonoBehaviour:
   markersRoot: {fileID: 0}
   waypointPath: {fileID: 0}
   autoSetupCamera: 1
-  cameraOrthographicSize: 7
+  cameraOrthographicSize: 8.5
 --- !u!4 &430501016
 Transform:
   m_ObjectHideFlags: 0

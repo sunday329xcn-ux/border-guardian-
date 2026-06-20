@@ -8,7 +8,6 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Starting Values (GDD)")]
     [SerializeField] int startingGold = 200;
     [SerializeField] int startingDiamonds = 0;
     [SerializeField] int startingLives = 20;
@@ -31,6 +30,13 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+        ApplySessionStart();
+    }
+
+    public void ApplySessionStart()
+    {
+        startingGold = GameDifficultyService.GetStartingGold();
+        startingLives = GameDifficultyService.GetStartingLives();
         ResetResources();
     }
 

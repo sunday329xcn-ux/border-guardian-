@@ -9,12 +9,15 @@ public class CodexMenuUI : MonoBehaviour
     {
         Towers,
         Enemies,
-        Synergies
+        Synergies,
+        Map
     }
 
     const float ScreenPadding = 24f;
 
     GameObject overlayRoot;
+    GameObject codexButtonObject;
+    Image overlayDim;
     GameObject listPanel;
     RectTransform listContentRect;
     TextMeshProUGUI detailTitleText;
@@ -23,13 +26,18 @@ public class CodexMenuUI : MonoBehaviour
     Button towersTabButton;
     Button enemiesTabButton;
     Button synergiesTabButton;
+    Button mapTabButton;
     Image towersTabImage;
     Image enemiesTabImage;
     Image synergiesTabImage;
+    Image mapTabImage;
 
+    TextMeshProUGUI closeButtonText;
     CodexTab activeTab = CodexTab.Towers;
     int selectedIndex;
     bool causedPause;
+    bool frontEndMode;
+    System.Action onFrontEndBack;
     readonly List<Button> listButtons = new();
 
     void Start()
@@ -43,12 +51,15 @@ public class CodexMenuUI : MonoBehaviour
     void CreateCodexButton()
     {
         var buttonObject = CreateUiObject("CodexButton", transform);
+        codexButtonObject = buttonObject;
         var rect = buttonObject.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
         rect.sizeDelta = new Vector2(96f, 36f);
-        rect.anchoredPosition = new Vector2(ScreenPadding, -212f);
+        rect.anchoredPosition = new Vector2(
+            UiDisplaySettings.HudLeftInset,
+            -(UiDisplaySettings.HudTopPadding + UiDisplaySettings.HudLineHeight * 3f + 54f));
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = buttonObject.AddComponent<Image>();
@@ -72,6 +83,7 @@ public class CodexMenuUI : MonoBehaviour
         overlayRect.offsetMax = Vector2.zero;
 
         var dim = overlayRoot.AddComponent<Image>();
+        overlayDim = dim;
         dim.color = new Color(0.03f, 0.05f, 0.03f, 0.82f);
         dim.raycastTarget = true;
 
@@ -107,14 +119,17 @@ public class CodexMenuUI : MonoBehaviour
         closeButton.onClick.AddListener(Close);
 
         var closeText = CreateLabel(closeObject.transform, "Close", 17f, TextAlignmentOptions.Center);
+        closeButtonText = closeText;
         Stretch(closeText.rectTransform);
 
-        towersTabButton = CreateTabButton(panel.transform, "Towers", 24f, 100f, () => SwitchTab(CodexTab.Towers));
-        enemiesTabButton = CreateTabButton(panel.transform, "Enemies", 130f, 100f, () => SwitchTab(CodexTab.Enemies));
-        synergiesTabButton = CreateTabButton(panel.transform, "Synergy", 236f, 100f, () => SwitchTab(CodexTab.Synergies));
+        towersTabButton = CreateTabButton(panel.transform, "Towers", 20f, 88f, () => SwitchTab(CodexTab.Towers));
+        enemiesTabButton = CreateTabButton(panel.transform, "Enemies", 112f, 88f, () => SwitchTab(CodexTab.Enemies));
+        synergiesTabButton = CreateTabButton(panel.transform, "Synergy", 204f, 88f, () => SwitchTab(CodexTab.Synergies));
+        mapTabButton = CreateTabButton(panel.transform, "Map", 296f, 88f, () => SwitchTab(CodexTab.Map));
         towersTabImage = towersTabButton.GetComponent<Image>();
         enemiesTabImage = enemiesTabButton.GetComponent<Image>();
         synergiesTabImage = synergiesTabButton.GetComponent<Image>();
+        mapTabImage = mapTabButton.GetComponent<Image>();
 
         listPanel = CreateUiObject("ListPanel", panel.transform);
         var listRect = listPanel.GetComponent<RectTransform>();
@@ -261,6 +276,7 @@ public class CodexMenuUI : MonoBehaviour
         SetTabActive(towersTabImage, activeTab == CodexTab.Towers);
         SetTabActive(enemiesTabImage, activeTab == CodexTab.Enemies);
         SetTabActive(synergiesTabImage, activeTab == CodexTab.Synergies);
+        SetTabActive(mapTabImage, activeTab == CodexTab.Map);
     }
 
     static void SetTabActive(Image image, bool active)
@@ -320,6 +336,7 @@ public class CodexMenuUI : MonoBehaviour
             CodexTab.Towers => GameCodexCatalog.GetTowerEntries(),
             CodexTab.Enemies => GameCodexCatalog.GetEnemyEntries(),
             CodexTab.Synergies => GameCodexCatalog.GetSynergyEntries(),
+            CodexTab.Map => GameCodexCatalog.GetMapEntries(),
             _ => GameCodexCatalog.GetTowerEntries()
         };
     }
@@ -343,9 +360,24 @@ public class CodexMenuUI : MonoBehaviour
         detailBodyText.text = entry.Body;
     }
 
+    public void OpenFromFrontEnd(System.Action onBack)
+    {
+        frontEndMode = true;
+        onFrontEndBack = onBack;
+        causedPause = false;
+        PrepareOpen();
+        SetFrontEndPresentation(true);
+        if (closeButtonText != null)
+            closeButtonText.text = "Back";
+        overlayRoot.SetActive(true);
+    }
+
     public void Open()
     {
+        frontEndMode = false;
+        onFrontEndBack = null;
         causedPause = false;
+        SetFrontEndPresentation(false);
 
         if (GamePauseController.Instance != null &&
             GamePauseController.Instance.CanPause() &&
@@ -355,22 +387,62 @@ public class CodexMenuUI : MonoBehaviour
             causedPause = true;
         }
 
+        PrepareOpen();
+        if (closeButtonText != null)
+            closeButtonText.text = "Close";
+        overlayRoot.SetActive(true);
+    }
+
+    void PrepareOpen()
+    {
         activeTab = CodexTab.Towers;
         selectedIndex = 0;
         RefreshTabVisuals();
         RebuildList();
         ShowSelectedEntry();
-        overlayRoot.SetActive(true);
     }
 
     public void Close()
     {
         Hide();
+        SetFrontEndPresentation(false);
+
+        if (frontEndMode)
+        {
+            var callback = onFrontEndBack;
+            frontEndMode = false;
+            onFrontEndBack = null;
+            callback?.Invoke();
+            return;
+        }
 
         if (causedPause && GamePauseController.Instance != null)
             GamePauseController.Instance.Resume();
 
         causedPause = false;
+    }
+
+    public void HideFromFrontEnd()
+    {
+        frontEndMode = false;
+        onFrontEndBack = null;
+        Hide();
+    }
+
+    public void SetInGameButtonVisible(bool visible)
+    {
+        if (codexButtonObject != null)
+            codexButtonObject.SetActive(visible);
+    }
+
+    void SetFrontEndPresentation(bool frontEnd)
+    {
+        if (overlayDim == null)
+            return;
+
+        overlayDim.color = frontEnd
+            ? Color.black
+            : new Color(0.03f, 0.05f, 0.03f, 0.82f);
     }
 
     void Hide()

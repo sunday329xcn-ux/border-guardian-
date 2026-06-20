@@ -33,28 +33,29 @@ public class ArrowTower : CombatTowerBase
         switch (level)
         {
             case 1:
-                minDamage = 5; maxDamage = 8; attackInterval = 0.6f; range = 3.5f;
+                minDamage = 5; maxDamage = 8; attackInterval = 0.6f;
                 break;
             case 2:
-                minDamage = 10; maxDamage = 14; attackInterval = 0.4f; range = 3.5f;
+                minDamage = 10; maxDamage = 14; attackInterval = 0.4f;
                 break;
             case 3:
-                minDamage = 15; maxDamage = 20; attackInterval = 0.35f; range = 3.5f; critChance = 0.1f;
+                minDamage = 14; maxDamage = 19; attackInterval = 0.35f; critChance = 0.1f;
                 break;
             case 4:
-                minDamage = 18; maxDamage = 24; attackInterval = 0.3f; range = 4.5f; critChance = 0.2f;
+                minDamage = 16; maxDamage = 22; attackInterval = 0.32f; critChance = 0.18f;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 24; maxDamage = 32; attackInterval = 0.25f; range = 4.5f; critChance = 0.2f;
+                minDamage = 20; maxDamage = 27; attackInterval = 0.28f; critChance = 0.15f;
                 prioritizeLowestHealth = true;
                 break;
             case 5 when branch == TowerBranch.BranchB:
-                minDamage = 38; maxDamage = 52; attackInterval = 1.2f; range = 6f;
-                pierceLine = true; pierceArmorBonus = 0.5f; canTargetFlying = false;
+                minDamage = 30; maxDamage = 42; attackInterval = 1.35f;
+                pierceLine = true; pierceArmorBonus = 0.45f; canTargetFlying = false;
                 break;
         }
 
         transform.localScale = Vector3.one * (0.72f + level * 0.03f);
+        TowerRangeScaling.ApplyTo(this);
     }
 
     void ResetCombatModifiers()

@@ -11,17 +11,20 @@ public class MapGridController : MonoBehaviour
 
     [Header("Camera")]
     [SerializeField] bool autoSetupCamera = true;
-    [SerializeField] float cameraOrthographicSize = 7f;
+    [SerializeField] float cameraOrthographicSize = 8.5f;
 
     readonly List<BuildSlot> buildSlots = new();
-    readonly WaypointPath[] spawnRoutes = new WaypointPath[4];
     MapCellType[,] cells;
     MapEnvironmentController environmentController;
+    MapRouteController routeController;
 
-    public WaypointPath Path => spawnRoutes.Length > 0 ? spawnRoutes[0] : waypointPath;
+    public WaypointPath Path => routeController != null
+        ? routeController.GetRoute(0, true)
+        : waypointPath;
     public IReadOnlyList<BuildSlot> BuildSlots => buildSlots;
     public MapCellType[,] Cells => cells;
     public MapEnvironmentController Environment => environmentController;
+    public MapRouteController Route => routeController;
 
     void Awake()
     {
@@ -29,7 +32,8 @@ public class MapGridController : MonoBehaviour
         cells = GrimmForestMapLayout.CreateCells();
         BuildTiles();
         BuildBuildSlots();
-        BuildPath();
+        BuildRouteController();
+        BuildPathPreview();
         BuildMarkers();
         BuildEnvironment();
 
@@ -100,8 +104,10 @@ public class MapGridController : MonoBehaviour
             slotObject.transform.localScale = Vector3.one * 0.72f;
 
             var baseRenderer = slotObject.GetComponent<SpriteRenderer>();
-            baseRenderer.color = new Color(0.55f, 0.58f, 0.62f);
             baseRenderer.sortingOrder = 1;
+
+            var gridPos = new Vector2Int(x, y);
+            var terrainType = GrimmForestMapLayout.GetPlatformTerrain(gridPos);
 
             var highlight = CreateSpriteObject("Highlight", slotObject.transform);
             highlight.transform.localPosition = Vector3.zero;
@@ -111,8 +117,16 @@ public class MapGridController : MonoBehaviour
             highlightRenderer.sortingOrder = 2;
             highlightRenderer.enabled = false;
 
+            var selectionHighlight = CreateSpriteObject("SelectionHighlight", slotObject.transform);
+            selectionHighlight.transform.localPosition = Vector3.zero;
+            selectionHighlight.transform.localScale = Vector3.one * 1.22f;
+            var selectionRenderer = selectionHighlight.GetComponent<SpriteRenderer>();
+            selectionRenderer.color = new Color(0.35f, 0.85f, 0.95f, 0.55f);
+            selectionRenderer.sortingOrder = 3;
+            selectionRenderer.enabled = false;
+
             var slot = slotObject.AddComponent<BuildSlot>();
-            slot.Initialize(new Vector2Int(x, y), true, highlightRenderer);
+            slot.Initialize(gridPos, true, baseRenderer, highlightRenderer, selectionRenderer, terrainType);
 
             var collider = slotObject.AddComponent<CircleCollider2D>();
             collider.radius = 0.4f;
@@ -124,46 +138,29 @@ public class MapGridController : MonoBehaviour
         Debug.Log($"Grimm Forest build slots: {buildSlots.Count} / {GrimmForestMapLayout.BuildSlotCount}");
     }
 
-    void BuildPath()
+    void BuildRouteController()
     {
-        for (int spawnIndex = 0; spawnIndex < 2; spawnIndex++)
-        {
-            for (int forkIndex = 0; forkIndex < 2; forkIndex++)
-            {
-                var routeIndex = spawnIndex * 2 + forkIndex;
-                var routeObject = new GameObject($"Route_S{spawnIndex}_F{forkIndex}");
-                routeObject.transform.SetParent(transform);
-                var route = routeObject.AddComponent<WaypointPath>();
-                var gridPoints = GrimmForestMapLayout.CreatePathWaypoints(spawnIndex, forkIndex == 0);
-                route.SetWaypoints(ToWorldPoints(gridPoints));
-                spawnRoutes[routeIndex] = route;
-            }
-        }
+        routeController = GetComponent<MapRouteController>();
+        if (routeController == null)
+            routeController = gameObject.AddComponent<MapRouteController>();
 
-        if (waypointPath != null)
-        {
-            waypointPath.SetWaypoints(spawnRoutes[0].Waypoints);
-        }
-        else
-        {
-            var pathObject = new GameObject("WaypointPath");
-            pathObject.transform.SetParent(transform);
-            waypointPath = pathObject.AddComponent<WaypointPath>();
-            waypointPath.SetWaypoints(spawnRoutes[0].Waypoints);
-        }
+        routeController.BuildRouteControls(transform);
+    }
+
+    void BuildPathPreview()
+    {
+        if (waypointPath != null && routeController != null)
+            waypointPath.SetWaypoints(routeController.GetRoute(0, true).Waypoints);
     }
 
     public WaypointPath GetSpawnRoute(int spawnIndex, bool takeUpperFork)
     {
+        if (routeController != null)
+            return routeController.GetRoute(spawnIndex, takeUpperFork);
+
         var clampedSpawn = Mathf.Clamp(spawnIndex, 0, 1);
         var routeIndex = clampedSpawn * 2 + (takeUpperFork ? 0 : 1);
-        return spawnRoutes[routeIndex] ?? Path;
-    }
-
-    static IEnumerable<Vector3> ToWorldPoints(IEnumerable<Vector2Int> gridPoints)
-    {
-        foreach (var gridPoint in gridPoints)
-            yield return MapGridSettings.GridToWorld(gridPoint.x, gridPoint.y);
+        return waypointPath;
     }
 
     void BuildEnvironment()

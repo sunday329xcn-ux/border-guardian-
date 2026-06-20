@@ -179,4 +179,19 @@ public static class WavePreviewHelper
     {
         return CountEnemiesForSpawnLane(wave, spawnIndex) > 0;
     }
+
+    public static int CountTotalEnemies(WaveDefinition wave)
+    {
+        if (wave?.groups == null || wave.groups.Length == 0)
+            return 0;
+
+        var total = 0;
+        foreach (var group in wave.groups)
+        {
+            if (group.count > 0)
+                total += group.count;
+        }
+
+        return total;
+    }
 }

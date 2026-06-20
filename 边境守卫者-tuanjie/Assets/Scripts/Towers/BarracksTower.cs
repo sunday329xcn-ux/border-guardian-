@@ -103,28 +103,28 @@ public class BarracksTower : TowerBase
         {
             case 1:
                 soldierCount = 2; soldierHp = 80; soldierArmor = 0; soldierMinDamage = 2; soldierMaxDamage = 4;
-                respawnInterval = 8f; rallyRange = 1.8f;
+                respawnInterval = 8f;
                 break;
             case 2:
                 soldierCount = 3; soldierHp = 140; soldierArmor = 5; soldierMinDamage = 5; soldierMaxDamage = 8;
-                respawnInterval = 7f; rallyRange = 1.8f; deathExplosionDamage = 10;
+                respawnInterval = 7f; deathExplosionDamage = 10;
                 break;
             case 3:
                 soldierCount = 3; soldierHp = 200; soldierArmor = 10; soldierMinDamage = 9; soldierMaxDamage = 12;
-                respawnInterval = 6f; rallyRange = 2.8f; deathExplosionDamage = 20;
+                respawnInterval = 6f; deathExplosionDamage = 20;
                 break;
             case 4:
                 soldierCount = 3; soldierHp = 280; soldierArmor = 15; soldierMinDamage = 14; soldierMaxDamage = 18;
-                respawnInterval = 5.5f; rallyRange = 2.8f; deathExplosionDamage = 30;
+                respawnInterval = 5.5f; deathExplosionDamage = 30;
                 break;
             case 5 when branch == TowerBranch.BranchA:
                 soldierCount = 2; soldierHp = 400; soldierArmor = 25; soldierMinDamage = 20; soldierMaxDamage = 26;
-                respawnInterval = 5f; rallyRange = 4f; deathExplosionDamage = 30;
+                respawnInterval = 5f; deathExplosionDamage = 30;
                 soldierColor = new Color(0.85f, 0.75f, 0.25f);
                 break;
             case 5 when branch == TowerBranch.BranchB:
                 soldierCount = 4; soldierHp = 150; soldierArmor = 5; soldierMinDamage = 28; soldierMaxDamage = 36;
-                respawnInterval = 4f; rallyRange = 4f; deathExplosionDamage = 15;
+                respawnInterval = 4f; deathExplosionDamage = 15;
                 soldierColor = new Color(0.35f, 0.35f, 0.45f);
                 break;
         }
@@ -132,9 +132,36 @@ public class BarracksTower : TowerBase
         rallyPoint = transform.position + Vector3.right * 0.8f;
         respawnTimer = 0f;
         transform.localScale = Vector3.one * (0.78f + level * 0.03f);
+        TowerRangeScaling.ApplyTo(this);
 
         for (int i = 0; i < soldierCount; i++)
             SpawnSoldier();
+    }
+
+    public void SetRallyRange(float value)
+    {
+        rallyRange = value;
+    }
+
+    public void ApplyTerrainModifiers(PlatformTerrainType terrain)
+    {
+        switch (terrain)
+        {
+            case PlatformTerrainType.Highland:
+            case PlatformTerrainType.RuneRange:
+                rallyRange *= 1.10f;
+                break;
+            case PlatformTerrainType.RuneAttackSpeed:
+                respawnInterval /= 1.15f;
+                break;
+            case PlatformTerrainType.RuneSynergy:
+                synergyRange *= 1.15f;
+                break;
+            case PlatformTerrainType.Fragile:
+                soldierMinDamage = Mathf.Max(1, Mathf.RoundToInt(soldierMinDamage * 1.15f));
+                soldierMaxDamage = Mathf.Max(soldierMinDamage, Mathf.RoundToInt(soldierMaxDamage * 1.15f));
+                break;
+        }
     }
 
     void SpawnSoldier()

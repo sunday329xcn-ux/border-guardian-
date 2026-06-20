@@ -137,7 +137,7 @@ public class SoldierUnit : MonoBehaviour
         if (owner == null)
             return armor;
 
-        var wardBonus = TowerSynergyService.CountNearby(owner, TowerType.Arcane, TowerSynergyCatalog.DefaultRange) * 4;
+        var wardBonus = TowerSynergyService.CountNearby(owner, TowerType.Arcane, owner.SynergyRange) * 3;
         return armor + wardBonus;
     }
 

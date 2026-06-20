@@ -2,8 +2,8 @@ using UnityEngine;
 
 public static class MapGridSettings
 {
-    public const int Width = 16;
-    public const int Height = 12;
+    public const int Width = 20;
+    public const int Height = 14;
     public const float CellSize = 1f;
 
     public static Vector3 GridToWorld(int x, int y)

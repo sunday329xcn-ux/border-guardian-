@@ -28,6 +28,7 @@ public static class TowerSelectionController
         {
             selectedTower.SetSelectedVisual(true);
             EnemySelectionController.Deselect();
+            BuildSlotSelectionController.Deselect();
         }
 
         OnSelectionChanged?.Invoke(selectedTower);

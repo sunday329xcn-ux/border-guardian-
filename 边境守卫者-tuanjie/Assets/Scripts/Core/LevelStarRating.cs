@@ -22,10 +22,10 @@ public static class LevelStarRating
     public static string BuildStarText(int stars, bool useEmpty = true)
     {
         stars = UnityEngine.Mathf.Clamp(stars, 0, MaxStars);
-        var filled = new string('★', stars);
+        var filled = new string('*', stars);
         if (!useEmpty || stars >= MaxStars)
             return filled;
 
-        return filled + new string('☆', MaxStars - stars);
+        return filled + new string('-', MaxStars - stars);
     }
 }

@@ -33,29 +33,30 @@ public class FrostTower : CombatTowerBase
         switch (level)
         {
             case 1:
-                minDamage = 2; maxDamage = 4; attackInterval = 1.2f; range = 2.5f; groundZoneSlow = 0.4f;
+                minDamage = 2; maxDamage = 4; attackInterval = 1.2f; groundZoneSlow = 0.4f;
                 break;
             case 2:
-                minDamage = 4; maxDamage = 7; attackInterval = 1.0f; range = 3.0f; groundZoneSlow = 0.6f; freezeChance = 0.15f; freezeDuration = 1f;
+                minDamage = 4; maxDamage = 7; attackInterval = 1.0f; groundZoneSlow = 0.6f; freezeChance = 0.15f; freezeDuration = 1f;
                 break;
             case 3:
-                minDamage = 7; maxDamage = 10; attackInterval = 0.9f; range = 3.0f; groundZoneSlow = 0.65f; freezeChance = 0.2f; freezeDuration = 1.5f;
+                minDamage = 7; maxDamage = 10; attackInterval = 0.9f; groundZoneSlow = 0.65f; freezeChance = 0.2f; freezeDuration = 1.5f;
                 break;
             case 4:
-                minDamage = 10; maxDamage = 14; attackInterval = 0.8f; range = 3.0f; groundZoneSlow = 0.3f;
-                groundZoneRadius = 0.9f; groundZoneDuration = 2f; freezeChance = 0.45f; freezeDuration = 1.5f;
+                minDamage = 9; maxDamage = 13; attackInterval = 0.82f; groundZoneSlow = 0.3f;
+                groundZoneRadius = 0.9f; groundZoneDuration = 2f; freezeChance = 0.4f; freezeDuration = 1.5f;
                 break;
             case 5 when branch == TowerBranch.BranchA:
-                minDamage = 12; maxDamage = 16; attackInterval = 0.75f; range = 3.0f; groundZoneSlow = 0.5f;
-                groundZoneRadius = 1.3f; groundZoneDuration = 3f; freezeChance = 0.4f; freezeDuration = 2f;
+                minDamage = 11; maxDamage = 15; attackInterval = 0.78f; groundZoneSlow = 0.5f;
+                groundZoneRadius = 1.3f; groundZoneDuration = 3f; freezeChance = 0.38f; freezeDuration = 2f;
                 break;
             case 5 when branch == TowerBranch.BranchB:
-                minDamage = 18; maxDamage = 26; attackInterval = 1.5f; range = 3.0f;
-                splashRadius = 1.2f; splashMaxTargets = 6; freezeChance = 1f; freezeDuration = 1.5f; groundZoneSlow = 0.5f;
+                minDamage = 14; maxDamage = 20; attackInterval = 1.6f;
+                splashRadius = 1.15f; splashMaxTargets = 5; freezeChance = 0.95f; freezeDuration = 1.35f; groundZoneSlow = 0.5f;
                 break;
         }
 
         transform.localScale = Vector3.one * (0.72f + level * 0.03f);
+        TowerRangeScaling.ApplyTo(this);
     }
 
     void ResetCombatModifiers()

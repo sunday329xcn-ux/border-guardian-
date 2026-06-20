@@ -35,25 +35,25 @@ public static class TowerSynergyCatalog
             TowerType.Frost,
             TowerType.Cannon,
             DefaultRange,
-            "Shatter: Cannon +30% vs slowed foes"),
+            "Shatter: Cannon +22% vs slowed foes"),
         new TowerSynergyRule(
             "volley",
             TowerType.Frost,
             TowerType.Arrow,
             DefaultRange,
-            "Volley: Arrow +25% vs slowed foes"),
+            "Volley: Arrow +18% vs slowed foes"),
         new TowerSynergyRule(
             "ward",
             TowerType.Arcane,
             TowerType.Barracks,
             DefaultRange,
-            "Ward: Arcane +4 dmg per Barracks; soldiers +4 armor per Arcane"),
+            "Ward: Arcane +3 dmg per Barracks; soldiers +3 armor per Arcane"),
         new TowerSynergyRule(
             "breach",
             TowerType.Cannon,
             TowerType.Arcane,
             DefaultRange,
-            "Breach: Cannon shreds MR; Arcane +15% vs debuffed foes")
+            "Breach: Cannon shreds MR; Arcane +12% vs debuffed foes")
     };
 
     public static IReadOnlyList<TowerSynergyRule> RulesList => Rules;
@@ -93,7 +93,7 @@ public static class TowerSynergyCatalog
     {
         var partnerA = TowerBuildCatalog.GetDisplayName(rule.PartnerA);
         var partnerB = TowerBuildCatalog.GetDisplayName(rule.PartnerB);
-        return $"{partnerA} + {partnerB}  ·  range {rule.Range:0.#}";
+        return $"{partnerA} + {partnerB}  ·  synergy range scales with level";
     }
 
     public static string GetCodexBody(TowerSynergyRule rule)
@@ -112,10 +112,10 @@ public static class TowerSynergyCatalog
     {
         var body = new StringBuilder();
         body.AppendLine("Partners: Frost + Arrow");
-        body.AppendLine($"Activation: within {DefaultRange:0.#} tiles on build platforms.");
+        body.AppendLine($"Activation: Lv.3+ only; within each tower's synergy range (scales with level; Lv.5 branches differ).");
         body.AppendLine();
         body.AppendLine("Effect:");
-        body.AppendLine("· Arrow Tower deals +25% damage to slowed enemies.");
+        body.AppendLine("· Arrow Tower deals +18% damage to slowed enemies.");
         body.AppendLine("· Requires a Frost Tower nearby to apply slow.");
         body.AppendLine();
         body.AppendLine("Strategy:");
@@ -129,10 +129,10 @@ public static class TowerSynergyCatalog
     {
         var body = new StringBuilder();
         body.AppendLine("Partners: Frost + Cannon");
-        body.AppendLine($"Activation: within {DefaultRange:0.#} tiles on build platforms.");
+        body.AppendLine($"Activation: Lv.3+ only; within each tower's synergy range (scales with level; Lv.5 branches differ).");
         body.AppendLine();
         body.AppendLine("Effect:");
-        body.AppendLine("· Cannon Tower deals +30% damage to slowed enemies.");
+        body.AppendLine("· Cannon Tower deals +22% damage to slowed enemies.");
         body.AppendLine("· Splash still hits groups; bonus applies per hit on slowed targets.");
         body.AppendLine();
         body.AppendLine("Strategy:");
@@ -146,12 +146,12 @@ public static class TowerSynergyCatalog
     {
         var body = new StringBuilder();
         body.AppendLine("Partners: Arcane + Barracks");
-        body.AppendLine($"Activation: within {DefaultRange:0.#} tiles on build platforms.");
+        body.AppendLine($"Activation: Lv.3+ only; within each tower's synergy range (scales with level; Lv.5 branches differ).");
         body.AppendLine();
         body.AppendLine("Effect:");
-        body.AppendLine("· Each nearby Barracks adds +4 flat damage to Arcane Tower attacks.");
-        body.AppendLine("· Each nearby Arcane Tower adds +4 armor to Barracks soldiers.");
-        body.AppendLine("· Multiple partners stack (2 Barracks → +8 Arcane dmg).");
+        body.AppendLine("· Each nearby Barracks adds +3 flat damage to Arcane Tower attacks.");
+        body.AppendLine("· Each nearby Arcane Tower adds +3 armor to Barracks soldiers.");
+        body.AppendLine("· Multiple partners stack (2 Barracks → +6 Arcane dmg).");
         body.AppendLine();
         body.AppendLine("Strategy:");
         body.AppendLine("· Cluster Arcane beside Barracks on a lane block point for both DPS and tankier soldiers.");
@@ -164,11 +164,11 @@ public static class TowerSynergyCatalog
     {
         var body = new StringBuilder();
         body.AppendLine("Partners: Cannon + Arcane");
-        body.AppendLine($"Activation: within {DefaultRange:0.#} tiles on build platforms.");
+        body.AppendLine($"Activation: Lv.3+ only; within each tower's synergy range (scales with level; Lv.5 branches differ).");
         body.AppendLine();
         body.AppendLine("Effect:");
-        body.AppendLine("· Cannon hits shred −10 MR for 4 seconds on the target.");
-        body.AppendLine("· Arcane Tower deals +15% damage to enemies under MR debuffs (including Breach shred).");
+        body.AppendLine("· Cannon hits shred −8 MR for 4 seconds on the target.");
+        body.AppendLine("· Arcane Tower deals +12% damage to enemies under MR debuffs (including Breach shred).");
         body.AppendLine("· Both towers benefit when paired — Cannon sets up, Arcane exploits.");
         body.AppendLine();
         body.AppendLine("Strategy:");
@@ -183,7 +183,8 @@ public static class TowerSynergyCatalog
         var body = new StringBuilder();
         body.AppendLine("Combat towers carry an element Tag. Pair the right Tags within range to unlock bonus effects.");
         body.AppendLine();
-        body.AppendLine($"Range: {DefaultRange:0.#} tiles between tower centers (build platforms only).");
+        body.AppendLine("Range: attack range ×0.8; synergy range restores 2.8+ tiles from Lv.3 (not scaled down).");
+        body.AppendLine("Select a tower to see its current synergy ring (blue) beside the attack ring (yellow).");
         body.AppendLine("Mine does not participate. Barracks counts as Guardian.");
         body.AppendLine();
         body.AppendLine("In battle:");

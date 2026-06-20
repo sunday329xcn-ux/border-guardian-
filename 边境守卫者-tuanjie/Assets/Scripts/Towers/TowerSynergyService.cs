@@ -11,7 +11,7 @@ public static class TowerSynergyService
 
     public static int CountNearby(TowerBase tower, TowerType partnerType, float range)
     {
-        if (tower == null)
+        if (tower == null || range <= 0f || !tower.HasSynergyUnlocked)
             return 0;
 
         var count = 0;
@@ -20,6 +20,9 @@ public static class TowerSynergyService
         foreach (var candidate in TowerRegistry.ActiveTowersSnapshot)
         {
             if (candidate == null || candidate == tower || candidate.TowerType != partnerType)
+                continue;
+
+            if (!candidate.HasSynergyUnlocked)
                 continue;
 
             if ((candidate.transform.position - tower.transform.position).sqrMagnitude > rangeSqr)
@@ -33,14 +36,14 @@ public static class TowerSynergyService
 
     public static bool IsRuleActive(TowerBase tower, TowerSynergyRule rule)
     {
-        if (tower == null || !TowerSynergyCatalog.IsCombatTower(tower.TowerType))
+        if (tower == null || !tower.HasSynergyUnlocked || !TowerSynergyCatalog.IsCombatTower(tower.TowerType))
             return false;
 
         if (tower.TowerType == rule.PartnerA)
-            return HasPartner(tower, rule.PartnerB, rule.Range);
+            return HasPartner(tower, rule.PartnerB, tower.SynergyRange);
 
         if (tower.TowerType == rule.PartnerB)
-            return HasPartner(tower, rule.PartnerA, rule.Range);
+            return HasPartner(tower, rule.PartnerA, tower.SynergyRange);
 
         return false;
     }
@@ -73,6 +76,12 @@ public static class TowerSynergyService
         var builder = new StringBuilder();
         builder.Append("\nTag: ");
         builder.Append(tagName);
+
+        if (!tower.HasSynergyUnlocked)
+        {
+            builder.Append("\nSynergy: unlocks at Lv.3");
+            return builder.ToString();
+        }
 
         var activeRules = GetActiveRules(tower);
         if (activeRules.Count == 0)

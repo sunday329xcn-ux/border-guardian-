@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class EnemyBehaviorBase : MonoBehaviour
@@ -10,6 +11,12 @@ public abstract class EnemyBehaviorBase : MonoBehaviour
     }
 
     public virtual void OnEnemyDeath(bool killedByPlayer) { }
+
+    public virtual bool AllowsTowerTargeting(CombatTowerBase tower) => true;
+
+    public virtual bool AllowsSoldierBlocking() => true;
+
+    public virtual int ModifyPhysicalDamage(int damage, Vector3 damageSource) => damage;
 }
 
 public static class EnemyAreaDamage
@@ -333,4 +340,195 @@ public class AncientDragonBehavior : EnemyBehaviorBase
     {
         TowerGroundZone.SpawnFire(transform.position, 0.35f, 2f, 18f);
     }
+}
+
+public static class NullifierSuppressionService
+{
+    static readonly Dictionary<TowerBase, float> suppressUntil = new();
+
+    public static void ApplySuppression(TowerBase tower, float duration)
+    {
+        if (tower == null || duration <= 0f)
+            return;
+
+        var endTime = Time.time + duration;
+        if (suppressUntil.TryGetValue(tower, out var existing) && existing > endTime)
+            return;
+
+        suppressUntil[tower] = endTime;
+    }
+
+    public static bool IsSuppressed(TowerBase tower)
+    {
+        if (tower == null)
+            return false;
+
+        if (!suppressUntil.TryGetValue(tower, out var endTime))
+            return false;
+
+        if (Time.time < endTime)
+            return true;
+
+        suppressUntil.Remove(tower);
+        return false;
+    }
+}
+
+public class ShieldBearerBehavior : EnemyBehaviorBase
+{
+    const float FrontDamageMultiplier = 0.3f;
+    const float FrontDotThreshold = 0.25f;
+
+    public override int ModifyPhysicalDamage(int damage, Vector3 damageSource)
+    {
+        if (damage <= 0 || enemy == null)
+            return damage;
+
+        var toSource = (damageSource - transform.position).normalized;
+        var facing = enemy.GetMovementFacing();
+        var dot = Vector2.Dot(facing, toSource);
+        return dot >= FrontDotThreshold ? Mathf.Max(1, Mathf.RoundToInt(damage * FrontDamageMultiplier)) : damage;
+    }
+}
+
+public class SplitSlimeBehavior : EnemyBehaviorBase
+{
+    bool isMini;
+
+    public void MarkAsMini()
+    {
+        isMini = true;
+        transform.localScale = Vector3.one * 0.38f;
+    }
+
+    public override void OnEnemyDeath(bool killedByPlayer)
+    {
+        if (!killedByPlayer || isMini || enemy == null || enemy.SpawnPath == null)
+            return;
+
+        var childHealth = Mathf.Max(1, enemy.MaxHealth / 2);
+        var progress = enemy.PathProgress;
+        var spawnPos = transform.position;
+
+        for (int i = 0; i < 2; i++)
+        {
+            var offset = (Vector3)(Random.insideUnitCircle * 0.25f);
+            EnemyBase.SpawnSplitChild(EnemyType.SplitSlime, enemy.SpawnPath, spawnPos + offset, progress, childHealth);
+        }
+    }
+}
+
+public class ShadeBehavior : EnemyBehaviorBase
+{
+    const float RevealPathProgress = 0.72f;
+    const int DetectionArrowLevel = 5;
+
+    bool isRevealed;
+
+    public bool IsStealthed => !isRevealed;
+
+    void Update()
+    {
+        if (enemy == null || enemy.IsDead)
+            return;
+
+        var shouldReveal = enemy.PathProgress >= RevealPathProgress;
+        var spotterRevealed = SupportTowerService.IsShadeRevealed(enemy);
+        enemy.SetStealthVisual(!shouldReveal && !spotterRevealed);
+
+        if (shouldReveal == isRevealed)
+            return;
+
+        isRevealed = shouldReveal;
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+        enemy?.SetStealthVisual(true);
+    }
+
+    public override bool AllowsTowerTargeting(CombatTowerBase tower)
+    {
+        if (isRevealed || tower == null)
+            return true;
+
+        if (SupportTowerService.IsShadeRevealed(enemy))
+            return true;
+
+        return tower.TowerType == TowerType.Arrow && tower.Level >= DetectionArrowLevel;
+    }
+}
+
+public class WarDrummerBehavior : EnemyBehaviorBase
+{
+    const float AuraRadius = 2f;
+    const float SpeedBuffPercent = 0.25f;
+    const float RefreshInterval = 0.35f;
+
+    float refreshTimer;
+
+    void Update()
+    {
+        if (enemy == null || enemy.IsDead)
+            return;
+
+        refreshTimer -= Time.deltaTime;
+        if (refreshTimer > 0f)
+            return;
+
+        refreshTimer = RefreshInterval;
+        foreach (var ally in EnemyRegistry.ActiveEnemiesSnapshot)
+        {
+            if (ally == null || ally.IsDead || ally == enemy)
+                continue;
+
+            if (Vector2.Distance(ally.transform.position, transform.position) > AuraRadius)
+                continue;
+
+            var speedEffect = ally.GetComponent<EnemySlowEffect>() ?? ally.gameObject.AddComponent<EnemySlowEffect>();
+            speedEffect.ApplySpeedBuff(SpeedBuffPercent, RefreshInterval + 0.1f);
+        }
+    }
+}
+
+public class NullifierBehavior : EnemyBehaviorBase
+{
+    const float SuppressionRadius = 2.8f;
+    const float SuppressionDuration = 5f;
+    const float RefreshInterval = 0.5f;
+
+    float refreshTimer;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        enemy?.RaisePresentation("Nullifier · synergy jam!");
+    }
+
+    void Update()
+    {
+        if (enemy == null || enemy.IsDead)
+            return;
+
+        refreshTimer -= Time.deltaTime;
+        if (refreshTimer > 0f)
+            return;
+
+        refreshTimer = RefreshInterval;
+        foreach (var tower in TowerRegistry.ActiveTowersSnapshot)
+        {
+            if (tower == null || !tower.HasSynergyUnlocked)
+                continue;
+
+            if (Vector2.Distance(tower.transform.position, transform.position) > SuppressionRadius)
+                continue;
+
+            NullifierSuppressionService.ApplySuppression(tower, SuppressionDuration);
+        }
+    }
+}
+
+public class BatSwarmBehavior : EnemyBehaviorBase
+{
 }

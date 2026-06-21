@@ -5,5 +5,8 @@ public enum TowerType
     Cannon,
     Arcane,
     Barracks,
-    DiamondMine
+    DiamondMine,
+    Spotter,
+    Beacon,
+    BountyShrine
 }

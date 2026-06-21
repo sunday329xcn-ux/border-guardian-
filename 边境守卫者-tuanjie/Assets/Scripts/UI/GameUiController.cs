@@ -11,7 +11,20 @@ using UnityEngine.UI;
 public class GameUiController : MonoBehaviour
 {
     const float ScreenPadding = UiDisplaySettings.ScreenPadding;
-    const float BuildBarHeight = 104f;
+    const float BuildButtonHeight = 52f;
+
+    static readonly TowerType[] AllTowerOrder =
+    {
+        TowerType.Arrow,
+        TowerType.Frost,
+        TowerType.Cannon,
+        TowerType.Arcane,
+        TowerType.Barracks,
+        TowerType.DiamondMine,
+        TowerType.Spotter,
+        TowerType.Beacon,
+        TowerType.BountyShrine
+    };
 
     [SerializeField] WaveManager waveManager;
     [SerializeField] TowerBuildSelector buildSelector;
@@ -24,16 +37,6 @@ public class GameUiController : MonoBehaviour
     GameObject wavePanelRoot;
     readonly Dictionary<TowerType, Image> towerButtonImages = new();
     GamePauseController boundPauseController;
-
-    static readonly TowerType[] TowerOrder =
-    {
-        TowerType.Arrow,
-        TowerType.Frost,
-        TowerType.Cannon,
-        TowerType.Arcane,
-        TowerType.Barracks,
-        TowerType.DiamondMine
-    };
 
     void Start()
     {
@@ -92,6 +95,15 @@ public class GameUiController : MonoBehaviour
 
         if (GetComponent<TowerBuildHotkeys>() == null)
             gameObject.AddComponent<TowerBuildHotkeys>();
+
+        if (GetComponent<GoblinMissileUI>() == null)
+            gameObject.AddComponent<GoblinMissileUI>();
+
+        if (GetComponent<EasterEggCelebrationUI>() == null)
+            gameObject.AddComponent<EasterEggCelebrationUI>();
+
+        if (GetComponent<EasterEggHintBannerUI>() == null)
+            gameObject.AddComponent<EasterEggHintBannerUI>();
 
         EnsureRangePreviewController();
 
@@ -167,54 +179,94 @@ public class GameUiController : MonoBehaviour
         var panel = CreateUiObject("BuildPanel", transform);
         buildPanelRoot = panel;
         var panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0f, 0f);
-        panelRect.anchorMax = new Vector2(1f, 0f);
-        panelRect.pivot = new Vector2(0.5f, 0f);
-        panelRect.sizeDelta = new Vector2(0f, BuildBarHeight);
-        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.anchorMin = new Vector2(1f, 0f);
+        panelRect.anchorMax = new Vector2(1f, 1f);
+        panelRect.pivot = new Vector2(1f, 0.5f);
+        panelRect.offsetMin = new Vector2(-UiDisplaySettings.BuildRailInsetFromRight, UiDisplaySettings.ScreenPadding);
+        panelRect.offsetMax = new Vector2(-UiDisplaySettings.RightEdgeInset, -UiDisplaySettings.BuildPanelTop);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panel.AddComponent<Image>();
         UiDisplaySettings.ApplyPanelBackground(background);
 
-        var layout = panel.AddComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(20, 20, 14, 14);
-        layout.spacing = 10f;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlWidth = false;
+        var scrollObject = CreateUiObject("BuildScroll", panel.transform);
+        var scrollRect = scrollObject.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 32f;
+        Stretch(scrollRect.GetComponent<RectTransform>());
+
+        var viewport = CreateUiObject("BuildViewport", scrollObject.transform);
+        var viewportRect = viewport.GetComponent<RectTransform>();
+        Stretch(viewportRect);
+        viewport.AddComponent<RectMask2D>();
+        scrollRect.viewport = viewportRect;
+
+        var content = CreateUiObject("BuildContent", viewport.transform);
+        var contentRect = content.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, 0f);
+        scrollRect.content = contentRect;
+
+        var layout = content.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(6, 6, 8, 8);
+        layout.spacing = 6f;
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.childControlWidth = true;
         layout.childControlHeight = true;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
 
-        foreach (var towerType in TowerOrder)
+        var contentFitter = content.AddComponent<ContentSizeFitter>();
+        contentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        foreach (var towerType in AllTowerOrder)
+            CreateTowerBuildButton(content.transform, towerType);
+    }
+
+    void CreateTowerBuildButton(Transform parent, TowerType towerType)
+    {
+        var cost = TowerBuildCatalog.GetBuildCost(towerType);
+        var name = TowerBuildCatalog.GetDisplayName(towerType);
+        var label = $"{name}\n{cost}g";
+
+        var capturedType = towerType;
+        var buttonObject = CreateButton(parent, label, new Vector2(0f, BuildButtonHeight), 15f, null);
+        ConfigureLayoutElement(buttonObject.GetComponent<RectTransform>(), BuildButtonHeight);
+
+        var dragHandler = buttonObject.AddComponent<TowerBuildDragHandler>();
+        dragHandler.Initialize(capturedType, buildSelector);
+
+        var hoverHandler = buttonObject.AddComponent<TowerBuildButtonHover>();
+        hoverHandler.Initialize(capturedType);
+
+        var button = buttonObject.GetComponent<Button>();
+        button.onClick.AddListener(() =>
         {
-            var cost = TowerBuildCatalog.GetBuildCost(towerType);
-            var name = TowerBuildCatalog.GetDisplayName(towerType);
-            var label = $"{name}\n{cost}g";
+            if (dragHandler.ConsumeClickSuppression())
+                return;
 
-            var capturedType = towerType;
-            var buttonObject = CreateButton(panel.transform, label, new Vector2(104f, 72f), UiDisplaySettings.FontSizeBody, null);
-            var dragHandler = buttonObject.AddComponent<TowerBuildDragHandler>();
-            dragHandler.Initialize(capturedType, buildSelector);
+            if (buildSelector != null)
+                buildSelector.Select(capturedType);
 
-            var hoverHandler = buttonObject.AddComponent<TowerBuildButtonHover>();
-            hoverHandler.Initialize(capturedType);
+            if (BuildSlotSelectionController.Selected != null)
+                TowerBuildService.TryBuild(capturedType, BuildSlotSelectionController.Selected);
+        });
 
-            var button = buttonObject.GetComponent<Button>();
-            button.onClick.AddListener(() =>
-            {
-                if (dragHandler.ConsumeClickSuppression())
-                    return;
+        towerButtonImages[towerType] = buttonObject.GetComponent<Image>();
+    }
 
-                if (buildSelector != null)
-                    buildSelector.Select(capturedType);
-
-                if (BuildSlotSelectionController.Selected != null)
-                    TowerBuildService.TryBuild(capturedType, BuildSlotSelectionController.Selected);
-            });
-
-            towerButtonImages[towerType] = buttonObject.GetComponent<Image>();
-        }
+    static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
     void CreateWavePanel()
@@ -225,8 +277,8 @@ public class GameUiController : MonoBehaviour
         panelRect.anchorMin = new Vector2(1f, 1f);
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
-        panelRect.sizeDelta = new Vector2(280f, 148f);
-        panelRect.anchoredPosition = new Vector2(-ScreenPadding, -ScreenPadding);
+        panelRect.sizeDelta = new Vector2(UiDisplaySettings.WavePanelWidth, UiDisplaySettings.WavePanelHeight);
+        panelRect.anchoredPosition = UiDisplaySettings.WavePanelAnchoredPosition;
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panel.AddComponent<Image>();
@@ -393,6 +445,12 @@ public class GameUiController : MonoBehaviour
         SetChildComponentVisible<TowerInfoPanelUI>(visible);
         SetChildComponentVisible<EnemyInfoPanelUI>(visible);
         SetChildComponentVisible<TowerBuildHotkeys>(visible);
+        SetChildComponentVisible<GoblinMissileUI>(visible);
+        SetChildComponentVisible<EasterEggCelebrationUI>(visible);
+
+        if (!visible)
+            EasterEggHintBannerUI.HideHint();
+
         SetChildComponentVisible<VictoryResultUI>(visible);
     }
 

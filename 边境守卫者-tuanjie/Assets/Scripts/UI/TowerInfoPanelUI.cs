@@ -88,6 +88,24 @@ public class TowerInfoPanelUI : MonoBehaviour
             upgradeButtonText.text = "No Upgrade";
             upgradeButton.interactable = false;
         }
+        else if (tower is SpotterTower)
+        {
+            detailText.text = "Reveals Shades within 3 range. Build before wave 11. Cannot upgrade.";
+            upgradeButtonText.text = "No Upgrade";
+            upgradeButton.interactable = false;
+        }
+        else if (tower is BeaconTower)
+        {
+            detailText.text = "Nearby combat towers +10% attack speed (2.5 range). Cannot upgrade.";
+            upgradeButtonText.text = "No Upgrade";
+            upgradeButton.interactable = false;
+        }
+        else if (tower is BountyShrineTower)
+        {
+            detailText.text = "Kills within 2.8 range grant +15% gold. Cannot upgrade.";
+            upgradeButtonText.text = "No Upgrade";
+            upgradeButton.interactable = false;
+        }
         else if (nextKind == TowerUpgradeKind.Gold)
         {
             var cost = tower.GetUpgradeGoldCostForNextLevel();
@@ -199,15 +217,13 @@ public class TowerInfoPanelUI : MonoBehaviour
 
     void CreatePanel()
     {
-        const float buildBarClearance = 116f;
-
         panelRoot = CreateUiObject("TowerInfoPanel", transform);
         var panelRect = panelRoot.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0f, 0f);
         panelRect.anchorMax = new Vector2(0f, 0f);
         panelRect.pivot = new Vector2(0f, 0f);
         panelRect.sizeDelta = new Vector2(420f, 328f);
-        panelRect.anchoredPosition = new Vector2(24f, buildBarClearance);
+        panelRect.anchoredPosition = new Vector2(UiDisplaySettings.LeftInteractiveClearance, UiDisplaySettings.ScreenPadding);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panelRoot.AddComponent<Image>();

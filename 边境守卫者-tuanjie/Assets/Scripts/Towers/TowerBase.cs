@@ -32,6 +32,7 @@ public abstract class TowerBase : MonoBehaviour
     public bool HasSynergyUnlocked => level >= TowerRangeScaling.SynergyUnlockLevel;
     public int CurrentTowerHealth => currentTowerHealth;
     public int MaxTowerHealth => maxTowerHealth;
+    public bool CanTargetFlyingEnemies => canTargetFlying;
 
     public bool IsMaxLevel => level >= MaxLevel || this is DiamondMineTower;
     public bool CanUpgradeWithGold => level < 3;

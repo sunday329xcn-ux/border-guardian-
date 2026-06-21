@@ -9,5 +9,11 @@ public enum EnemyType
     ShadowPriest,
     WolfRider,
     TowerBreaker,
-    AncientDragon
+    AncientDragon,
+    ShieldBearer,
+    SplitSlime,
+    Shade,
+    WarDrummer,
+    Nullifier,
+    BatSwarm
 }

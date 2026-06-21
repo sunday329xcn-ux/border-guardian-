@@ -64,6 +64,7 @@ public class MainMenuUI : MonoBehaviour
         {
             HideFrontEnd();
             EnableGameplayImmediate();
+            GamePauseController.Instance?.Resume();
             waveManager?.StartGameplay();
             return;
         }
@@ -138,11 +139,11 @@ public class MainMenuUI : MonoBehaviour
 
         GameManager.Instance?.ApplySessionStart();
         CombatStatsTracker.Reset();
+        GamePauseController.Instance?.Resume();
         waveManager?.StartGameplay();
 
         loadingPanel.SetActive(false);
         HideFrontEnd();
-        GamePauseController.Instance?.Resume();
     }
 
     void UpdateLoadingBar(float progress, string status)

@@ -34,6 +34,7 @@ public class EnemyBase : MonoBehaviour
     bool isInvulnerable;
     float rootEndTime;
     Coroutine hitFlashRoutine;
+    bool requiresAntiAirOnly;
 
     public EnemyType EnemyType { get; private set; }
     public WaypointPath SpawnPath => spawnPath;
@@ -49,6 +50,7 @@ public class EnemyBase : MonoBehaviour
     public bool IsBoss => isBoss;
     public bool IgnoresBarracksBlock => ignoresBarracksBlock;
     public bool IsInvulnerable => isInvulnerable;
+    public bool RequiresAntiAirOnly => requiresAntiAirOnly;
     public bool IsRooted => Time.time < rootEndTime;
     public bool IsStunned => Time.time < stunEndTime;
     public float PathProgress => pathFollower != null ? pathFollower.PathProgress : 0f;
@@ -84,6 +86,81 @@ public class EnemyBase : MonoBehaviour
             OnPriorityEnemySpawned?.Invoke(enemy);
 
         return enemy;
+    }
+
+    public static EnemyBase SpawnSplitChild(EnemyType type, WaypointPath path, Vector3 position, float pathProgress, int maxHealthOverride)
+    {
+        var stats = EnemyCatalog.Get(type);
+        var enemyObject = new GameObject(EnemyCatalog.GetDisplayName(type));
+        enemyObject.transform.position = position;
+        enemyObject.transform.localScale = Vector3.one * stats.Scale * 0.72f;
+
+        var renderer = enemyObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = MapGridControllerShared.GetWhiteSprite();
+        renderer.sortingOrder = 5;
+
+        var enemy = enemyObject.AddComponent<EnemyBase>();
+        enemy.EnemyType = type;
+        enemy.spriteRenderer = renderer;
+        enemy.ApplyStats(stats);
+        enemy.maxHealth = Mathf.Max(1, maxHealthOverride);
+        enemy.currentHealth = enemy.maxHealth;
+        enemy.EnsureSelectionCollider(stats.Scale * 0.72f);
+        enemy.Initialize(path, preservePosition: true);
+        enemy.pathFollower?.SyncToPathProgress(pathProgress);
+        EnemyCatalog.AttachBehavior(enemy, type);
+
+        var splitBehavior = enemy.GetComponent<SplitSlimeBehavior>();
+        splitBehavior?.MarkAsMini();
+
+        return enemy;
+    }
+
+    public bool CanBeTargetedByCombatTower(CombatTowerBase tower)
+    {
+        if (tower == null || isDead)
+            return false;
+
+        if (requiresAntiAirOnly && !tower.CanTargetFlyingEnemies)
+            return false;
+
+        foreach (var behavior in GetComponents<EnemyBehaviorBase>())
+        {
+            if (!behavior.AllowsTowerTargeting(tower))
+                return false;
+        }
+
+        return true;
+    }
+
+    public bool CanBeBlockedBySoldiers()
+    {
+        if (isFlying || ignoresBarracksBlock)
+            return false;
+
+        foreach (var behavior in GetComponents<EnemyBehaviorBase>())
+        {
+            if (!behavior.AllowsSoldierBlocking())
+                return false;
+        }
+
+        return true;
+    }
+
+    public Vector3 GetMovementFacing()
+    {
+        return pathFollower != null ? pathFollower.GetMovementDirection() : Vector3.right;
+    }
+
+    public void SetStealthVisual(bool stealthed)
+    {
+        if (spriteRenderer == null)
+            return;
+
+        var alpha = stealthed ? 0.38f : 1f;
+        var color = enemyColor;
+        color.a = alpha;
+        spriteRenderer.color = color;
     }
 
     public void RaisePresentation(string message)
@@ -126,19 +203,25 @@ public class EnemyBase : MonoBehaviour
         isElite = stats.IsElite;
         isBoss = stats.IsBoss;
         ignoresBarracksBlock = stats.IgnoresBarracksBlock;
+        requiresAntiAirOnly = stats.RequiresAntiAirOnly;
         enemyColor = stats.Color;
 
         if (spriteRenderer != null)
             spriteRenderer.color = enemyColor;
     }
 
-    public void Initialize(WaypointPath path)
+    public void Initialize(WaypointPath path, bool preservePosition = false)
     {
         spawnPath = path;
         currentHealth = maxHealth;
-        pathFollower = gameObject.AddComponent<PathFollower>();
-        pathFollower.OnPathComplete += HandleReachedGoal;
-        pathFollower.Begin(path, moveSpeed);
+        pathFollower = gameObject.GetComponent<PathFollower>();
+        if (pathFollower == null)
+        {
+            pathFollower = gameObject.AddComponent<PathFollower>();
+            pathFollower.OnPathComplete += HandleReachedGoal;
+        }
+
+        pathFollower.Begin(path, moveSpeed, preservePosition);
 
         if (GetComponent<EnemySlowEffect>() == null)
             gameObject.AddComponent<EnemySlowEffect>();
@@ -278,18 +361,25 @@ public class EnemyBase : MonoBehaviour
         collider.isTrigger = true;
     }
 
-    public int TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f, bool isCrit = false)
+    public int TakeDamage(int baseDamage, DamageType damageType, float armorPenetration = 0f, bool isCrit = false, Vector3? damageSource = null)
     {
         if (isDead || baseDamage <= 0 || isInvulnerable)
             return 0;
 
+        var workingDamage = baseDamage;
+        if (damageType == DamageType.Physical && damageSource.HasValue)
+        {
+            foreach (var behavior in GetComponents<EnemyBehaviorBase>())
+                workingDamage = behavior.ModifyPhysicalDamage(workingDamage, damageSource.Value);
+        }
+
         var effectiveArmor = Mathf.Max(0, currentArmor - Mathf.RoundToInt(armorPenetration));
         var finalDamage = damageType switch
         {
-            DamageType.Physical => DamageCalculator.CalculatePhysicalDamage(baseDamage, effectiveArmor),
-            DamageType.Magic => DamageCalculator.CalculateMagicDamage(baseDamage, GetEffectiveMagicResist()),
-            DamageType.True => baseDamage,
-            _ => baseDamage
+            DamageType.Physical => DamageCalculator.CalculatePhysicalDamage(workingDamage, effectiveArmor),
+            DamageType.Magic => DamageCalculator.CalculateMagicDamage(workingDamage, GetEffectiveMagicResist()),
+            DamageType.True => workingDamage,
+            _ => workingDamage
         };
 
         if (finalDamage <= 0)
@@ -359,11 +449,13 @@ public class EnemyBase : MonoBehaviour
 
         isDead = true;
         EnemySelectionController.DeselectIf(this);
-        CombatFeedbackService.ReportEnemyDeath(this, goldReward, diamondReward, leaked);
+
+        var rewardGold = leaked ? goldReward : SupportTowerService.CalculateGoldReward(transform.position, goldReward);
+        CombatFeedbackService.ReportEnemyDeath(this, rewardGold, diamondReward, leaked);
 
         if (!leaked && GameManager.Instance != null)
         {
-            GameManager.Instance.AddGold(goldReward);
+            GameManager.Instance.AddGold(rewardGold);
 
             if (diamondReward > 0)
                 GameManager.Instance.AddDiamonds(diamondReward);

@@ -41,8 +41,8 @@ public class GameplayExitUI : MonoBehaviour
         rect.anchorMin = new Vector2(1f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.sizeDelta = new Vector2(72f, 36f);
-        rect.anchoredPosition = new Vector2(-ScreenPadding - 504f, -ScreenPadding);
+        rect.sizeDelta = new Vector2(UiDisplaySettings.ExitButtonWidth, UiDisplaySettings.ControlButtonHeight);
+        rect.anchoredPosition = UiDisplaySettings.ExitButtonAnchoredPosition;
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = exitButtonObject.AddComponent<Image>();

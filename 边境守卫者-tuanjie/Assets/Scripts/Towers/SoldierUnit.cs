@@ -91,7 +91,7 @@ public class SoldierUnit : MonoBehaviour
             attackCooldown -= Time.deltaTime;
             if (attackCooldown <= 0f)
             {
-                engagedEnemy.TakeDamage(Random.Range(minDamage, maxDamage + 1), DamageType.Physical);
+                engagedEnemy.TakeDamage(Random.Range(minDamage, maxDamage + 1), DamageType.Physical, damageSource: transform.position);
                 attackCooldown = attackInterval;
             }
             return;
@@ -107,7 +107,7 @@ public class SoldierUnit : MonoBehaviour
 
         foreach (var enemy in EnemyRegistry.ActiveEnemiesSnapshot)
         {
-            if (enemy == null || enemy.IsDead || enemy.IsFlying || enemy.IgnoresBarracksBlock)
+            if (enemy == null || enemy.IsDead || !enemy.CanBeBlockedBySoldiers())
                 continue;
 
             var dist = Vector2.Distance(transform.position, enemy.transform.position);

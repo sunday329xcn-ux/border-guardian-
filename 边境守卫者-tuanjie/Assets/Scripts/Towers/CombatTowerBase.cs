@@ -56,7 +56,7 @@ public abstract class CombatTowerBase : TowerBase
             return;
 
         PerformAttack(target);
-        attackCooldown = attackInterval;
+        attackCooldown = attackInterval / SupportTowerService.GetAttackSpeedMultiplier(transform.position);
     }
 
     protected virtual EnemyBase AcquireTarget()
@@ -138,11 +138,22 @@ public abstract class CombatTowerBase : TowerBase
         if (enemy == null || enemy.IsDead)
             return false;
 
+        if (!CanBeTargetedByCombatTower(enemy))
+            return false;
+
         if (!canTargetFlying && enemy.IsFlying)
             return false;
 
         var offset = enemy.transform.position - transform.position;
         return offset.sqrMagnitude <= rangeSqr;
+    }
+
+    bool CanBeTargetedByCombatTower(EnemyBase enemy)
+    {
+        if (enemy.RequiresAntiAirOnly && !canTargetFlying)
+            return false;
+
+        return enemy.CanBeTargetedByCombatTower(this);
     }
 
     protected virtual void PerformAttack(EnemyBase target)
@@ -177,6 +188,9 @@ public abstract class CombatTowerBase : TowerBase
             if (enemy == null || enemy.IsDead)
                 continue;
 
+            if (!CanBeTargetedByCombatTower(enemy))
+                continue;
+
             if (!canTargetFlying && enemy.IsFlying)
                 continue;
 
@@ -193,7 +207,7 @@ public abstract class CombatTowerBase : TowerBase
                 damage = Mathf.RoundToInt(damage * (1f + pierceArmorBonus));
 
             damage = ApplyOutgoingDamageSynergies(damage, enemy);
-            enemy.TakeDamage(damage, DamageType.Physical, armorPenetration);
+            enemy.TakeDamage(damage, DamageType.Physical, armorPenetration, damageSource: transform.position);
             ApplyOnHitEffects(enemy);
         }
     }
@@ -252,7 +266,7 @@ public abstract class CombatTowerBase : TowerBase
                 slow.ApplySlow(1f, freezeDuration);
         }
 
-        var finalDamage = target.TakeDamage(damage, damageType, armorPenetration, isCrit);
+        var finalDamage = target.TakeDamage(damage, damageType, armorPenetration, isCrit, transform.position);
 
         if (finalDamage > 0)
             CombatStatsTracker.RecordDamage(this, finalDamage);

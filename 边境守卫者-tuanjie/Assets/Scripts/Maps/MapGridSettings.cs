@@ -18,4 +18,17 @@ public static class MapGridSettings
     {
         return x >= 0 && x < Width && y >= 0 && y < Height;
     }
+
+    public static Vector2Int WorldToGrid(Vector3 worldPoint)
+    {
+        return new Vector2Int(
+            Mathf.FloorToInt(worldPoint.x / CellSize),
+            Mathf.FloorToInt(worldPoint.y / CellSize));
+    }
+
+    public static bool IsPointInCell(Vector3 worldPoint, Vector2Int cell, float radius = 0.55f)
+    {
+        var cellCenter = GridToWorld(cell.x, cell.y);
+        return Vector2.Distance(cellCenter, worldPoint) <= radius;
+    }
 }

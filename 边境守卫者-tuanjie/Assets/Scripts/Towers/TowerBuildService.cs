@@ -42,6 +42,7 @@ public static class TowerBuildService
         BuildSlotSelectionController.Deselect();
         TowerSelectionController.Select(builtTower);
         EnemySelectionController.Deselect();
+        EasterEggController.Instance?.RegisterTowerBuilt(type);
         return true;
     }
 }

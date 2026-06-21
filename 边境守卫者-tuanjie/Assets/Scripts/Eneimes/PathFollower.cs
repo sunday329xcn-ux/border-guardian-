@@ -14,7 +14,7 @@ public class PathFollower : MonoBehaviour
     public float PathProgress => CalculatePathProgress();
     public event Action OnPathComplete;
 
-    public void Begin(WaypointPath waypointPath, float speed)
+    public void Begin(WaypointPath waypointPath, float speed, bool preservePosition = false)
     {
         path = waypointPath;
         moveSpeed = speed;
@@ -22,8 +22,34 @@ public class PathFollower : MonoBehaviour
         isPaused = false;
         isMoving = path != null && path.Waypoints.Count > 0;
 
-        if (isMoving)
+        if (isMoving && !preservePosition)
             transform.position = path.StartPoint;
+    }
+
+    public void SyncToPathProgress(float progress)
+    {
+        if (path == null || path.Waypoints.Count == 0)
+            return;
+
+        var clamped = Mathf.Clamp(progress, 0f, path.Waypoints.Count - 0.01f);
+        waypointIndex = Mathf.Min(Mathf.FloorToInt(clamped), path.Waypoints.Count - 1);
+        var fraction = clamped - waypointIndex;
+        var previous = waypointIndex > 0 ? path.Waypoints[waypointIndex - 1] : path.StartPoint;
+        var current = path.Waypoints[waypointIndex];
+        transform.position = Vector3.Lerp(previous, current, fraction);
+    }
+
+    public Vector3 GetMovementDirection()
+    {
+        if (path == null || path.Waypoints.Count == 0)
+            return Vector3.right;
+
+        var target = path.Waypoints[Mathf.Min(waypointIndex, path.Waypoints.Count - 1)];
+        var direction = target - transform.position;
+        if (direction.sqrMagnitude < 0.0001f && waypointIndex > 0)
+            direction = target - path.Waypoints[waypointIndex - 1];
+
+        return direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.right;
     }
 
     public void SetMoveSpeed(float speed)

@@ -11,7 +11,10 @@ public class TowerBuildHotkeys : MonoBehaviour
         TowerType.Cannon,
         TowerType.Arcane,
         TowerType.Barracks,
-        TowerType.DiamondMine
+        TowerType.DiamondMine,
+        TowerType.Spotter,
+        TowerType.Beacon,
+        TowerType.BountyShrine
     };
 
     void Start()

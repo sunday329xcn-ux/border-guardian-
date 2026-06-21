@@ -20,6 +20,7 @@ public class WaveManager : MonoBehaviour
 
     Coroutine waveRoutine;
     float preparationTimer;
+    float callEarlyBonusMultiplier = 1f;
     bool spawnFinished;
     int currentWaveIndex;
     int totalWaves = GrimmForestWaves.TotalWaves;
@@ -32,6 +33,7 @@ public class WaveManager : MonoBehaviour
     public int CurrentWaveNumber => currentWaveIndex + 1;
     public int TotalWaves => totalWaves;
     public float PreparationTimeLeft => preparationTimer;
+    public float CallEarlyBonusMultiplier => callEarlyBonusMultiplier;
     public int CurrentWaveTotalEnemies => currentWaveTotalEnemies;
     public int CurrentWaveSpawnedEnemies => currentWaveSpawnedEnemies;
     public float WaveSpawnProgress =>
@@ -81,6 +83,11 @@ public class WaveManager : MonoBehaviour
         State = WaveState.Preparation;
         preparationTimer = preparationCountdown;
         spawnFinished = false;
+
+        if (mapGridController == null)
+            mapGridController = FindObjectOfType<MapGridController>();
+
+        MapPlatformUnlockService.TryUnlockForWave(CurrentWaveNumber, mapGridController);
         OnWaveStateChanged?.Invoke();
     }
 
@@ -109,7 +116,7 @@ public class WaveManager : MonoBehaviour
         if (GameManager.Instance == null)
             return;
 
-        var bonus = earlyStartBaseBonus + CurrentWaveNumber * 3;
+        var bonus = Mathf.RoundToInt((earlyStartBaseBonus + CurrentWaveNumber * 3) * callEarlyBonusMultiplier);
         GameManager.Instance.AddGold(bonus);
         preparationTimer = 0f;
         StartNextWave();
@@ -292,6 +299,11 @@ public class WaveManager : MonoBehaviour
     public static string GetSpawnLaneDisplayName(int spawnIndex)
     {
         return spawnIndex == 0 ? "Upper Route" : "Lower Route";
+    }
+
+    public void SetCallEarlyBonusMultiplier(float multiplier)
+    {
+        callEarlyBonusMultiplier = Mathf.Max(1f, multiplier);
     }
 
     public void ResetLevel()

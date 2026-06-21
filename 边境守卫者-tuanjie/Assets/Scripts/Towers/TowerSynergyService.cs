@@ -39,6 +39,9 @@ public static class TowerSynergyService
         if (tower == null || !tower.HasSynergyUnlocked || !TowerSynergyCatalog.IsCombatTower(tower.TowerType))
             return false;
 
+        if (NullifierSuppressionService.IsSuppressed(tower))
+            return false;
+
         if (tower.TowerType == rule.PartnerA)
             return HasPartner(tower, rule.PartnerB, tower.SynergyRange);
 
@@ -80,6 +83,12 @@ public static class TowerSynergyService
         if (!tower.HasSynergyUnlocked)
         {
             builder.Append("\nSynergy: unlocks at Lv.3");
+            return builder.ToString();
+        }
+
+        if (NullifierSuppressionService.IsSuppressed(tower))
+        {
+            builder.Append("\nSynergy: jammed by Nullifier");
             return builder.ToString();
         }
 

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class WaveTimelineUI : MonoBehaviour
 {
-    const float BarWidth = 420f;
+    const float BarWidth = UiDisplaySettings.WavePanelWidth;
     const float BarHeight = 10f;
 
     [SerializeField] WaveManager waveManager;
@@ -66,11 +66,11 @@ public class WaveTimelineUI : MonoBehaviour
         root.transform.SetParent(transform, false);
 
         var rootRect = root.GetComponent<RectTransform>();
-        rootRect.anchorMin = new Vector2(0.5f, 1f);
-        rootRect.anchorMax = new Vector2(0.5f, 1f);
-        rootRect.pivot = new Vector2(0.5f, 1f);
-        rootRect.anchoredPosition = new Vector2(0f, -18f);
-        rootRect.sizeDelta = new Vector2(BarWidth, BarHeight + 28f);
+        rootRect.anchorMin = new Vector2(1f, 1f);
+        rootRect.anchorMax = new Vector2(1f, 1f);
+        rootRect.pivot = new Vector2(1f, 1f);
+        rootRect.anchoredPosition = UiDisplaySettings.WaveTimelineAnchoredPosition;
+        rootRect.sizeDelta = new Vector2(BarWidth, BarHeight + UiDisplaySettings.WaveTimelineHeight - 8f);
         UiDisplaySettings.SnapRectToPixels(rootRect);
 
         progressLabel = CreateLabel(root.transform, "Wave progress", 14f, TextAlignmentOptions.Center);

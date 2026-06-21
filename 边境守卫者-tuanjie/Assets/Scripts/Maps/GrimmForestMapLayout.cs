@@ -9,6 +9,7 @@ public static class GrimmForestMapLayout
     public static readonly Vector2Int UpperSpawnCell = new(0, 12);
     public static readonly Vector2Int LowerSpawnCell = new(0, 1);
     public static readonly Vector2Int GoalCell = new(19, 7);
+    public static readonly Vector2Int EasterEggCornerCell = new(19, 0);
     public static readonly Vector2Int ForkGateCell = new(10, 7);
     public static readonly Vector2Int UpperBlockCell = new(13, 9);
     public static readonly Vector2Int LowerBlockCell = new(13, 5);
@@ -69,20 +70,30 @@ public static class GrimmForestMapLayout
 
     static readonly Vector2Int[] BuildPlatformCells =
     {
-        new(2, 13), new(4, 13), new(6, 13), new(5, 11), new(8, 11),
-        new(2, 0), new(4, 0), new(6, 0), new(5, 2), new(8, 2),
+        new(2, 13), new(4, 13), new(6, 13), new(8, 11),
+        new(2, 0), new(4, 0), new(6, 0), new(5, 2),
         new(7, 8), new(9, 8), new(11, 10), new(11, 3), new(11, 4),
         new(12, 8), new(12, 6), new(14, 8), new(14, 4),
         new(16, 9), new(16, 4), new(18, 8), new(18, 6), new(15, 10)
     };
+
+    public static readonly LatentPlatformDefinition[] LatentPlatforms =
+    {
+        new(6, new Vector2Int(10, 9), PlatformTerrainType.RuneRange),
+        new(6, new Vector2Int(10, 5), PlatformTerrainType.RuneAttackSpeed),
+        new(11, new Vector2Int(17, 9), PlatformTerrainType.Highland),
+        new(11, new Vector2Int(17, 5), PlatformTerrainType.RuneSynergy)
+    };
+
+    public static int BuildSlotCount => BuildPlatformCells.Length;
+
+    public static int TotalBuildSlotCount => BuildPlatformCells.Length + LatentPlatforms.Length;
 
     static readonly Vector2Int[] BlockedCells =
     {
         new(0, 13), new(1, 13), new(19, 13), new(18, 13),
         new(0, 0), new(1, 0), new(19, 0), new(18, 0)
     };
-
-    public static int BuildSlotCount => BuildPlatformCells.Length;
 
     public static PlatformTerrainType GetPlatformTerrain(Vector2Int cell)
     {
@@ -133,6 +144,8 @@ public static class GrimmForestMapLayout
 
         return cells;
     }
+
+    public static Vector2Int[] GetInitialBuildPlatformCells() => BuildPlatformCells;
 
     public static Vector2Int[] BuildRouteCells(int spawnIndex, ForkBranchChoice branch, RouteBlockType blockType)
     {
@@ -229,4 +242,18 @@ public static class GrimmForestMapLayout
 
         return combined.ToArray();
     }
+}
+
+public readonly struct LatentPlatformDefinition
+{
+    public LatentPlatformDefinition(int unlockAtWave, Vector2Int cell, PlatformTerrainType terrain)
+    {
+        UnlockAtWave = unlockAtWave;
+        Cell = cell;
+        Terrain = terrain;
+    }
+
+    public int UnlockAtWave { get; }
+    public Vector2Int Cell { get; }
+    public PlatformTerrainType Terrain { get; }
 }

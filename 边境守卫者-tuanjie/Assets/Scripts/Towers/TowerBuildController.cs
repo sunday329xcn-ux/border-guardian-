@@ -42,6 +42,12 @@ public class TowerBuildController : MonoBehaviour
 
         var worldPoint = GetMouseWorldPosition();
 
+        if (TryHandleGoblinMissileLaunch(worldPoint))
+            return;
+
+        if (TryHandleEasterEggClick(worldPoint))
+            return;
+
         if (TryHandleRallyPlacement(worldPoint))
             return;
 
@@ -49,6 +55,22 @@ public class TowerBuildController : MonoBehaviour
             return;
 
         HandleWorldClick(worldPoint);
+    }
+
+    bool TryHandleGoblinMissileLaunch(Vector3 worldPoint)
+    {
+        var missile = GoblinMissileController.Instance;
+        if (missile == null || !missile.IsTargeting)
+            return false;
+
+        missile.TryLaunchAt(worldPoint);
+        return true;
+    }
+
+    bool TryHandleEasterEggClick(Vector3 worldPoint)
+    {
+        var easterEgg = EasterEggController.Instance;
+        return easterEgg != null && easterEgg.TryHandleCornerClick(worldPoint);
     }
 
     bool TryHandleEnvironmentClick(Vector3 worldPoint)

@@ -47,6 +47,22 @@ public class MapEnvironmentController : MonoBehaviour
         {
             trapSlots[i] = TrapPlacementSlot.Create(environmentRoot, placementCells[i]);
         }
+
+        BuildEasterEggCornerMarker();
+    }
+
+    void BuildEasterEggCornerMarker()
+    {
+        var corner = GrimmForestMapLayout.EasterEggCornerCell;
+        var markerObject = new GameObject("EasterEggCornerHint");
+        markerObject.transform.SetParent(environmentRoot, false);
+        markerObject.transform.position = MapGridSettings.GridToWorld(corner.x, corner.y);
+        markerObject.transform.localScale = Vector3.one * 0.28f;
+
+        var renderer = markerObject.AddComponent<SpriteRenderer>();
+        renderer.sprite = MapGridControllerShared.GetWhiteSprite();
+        renderer.color = new Color(0.95f, 0.85f, 0.35f, 0.28f);
+        renderer.sortingOrder = 1;
     }
 
     void Update()

@@ -33,6 +33,7 @@ public class CodexMenuUI : MonoBehaviour
     Image mapTabImage;
 
     TextMeshProUGUI closeButtonText;
+    ScrollRect listScroll;
     CodexTab activeTab = CodexTab.Towers;
     int selectedIndex;
     bool causedPause;
@@ -137,19 +138,23 @@ public class CodexMenuUI : MonoBehaviour
         listRect.anchorMax = new Vector2(0f, 1f);
         listRect.pivot = new Vector2(0f, 1f);
         listRect.anchoredPosition = new Vector2(20f, -104f);
-        listRect.sizeDelta = new Vector2(232f, -124f);
+        listRect.sizeDelta = new Vector2(248f, -124f);
 
         var listBackground = listPanel.AddComponent<Image>();
         listBackground.color = new Color(0.06f, 0.08f, 0.06f, 0.92f);
 
         var listScroll = listPanel.AddComponent<ScrollRect>();
+        this.listScroll = listScroll;
         listScroll.horizontal = false;
         listScroll.vertical = true;
         listScroll.movementType = ScrollRect.MovementType.Clamped;
+        listScroll.scrollSensitivity = 60f;
+        listScroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
 
         var listViewport = CreateUiObject("ListViewport", listPanel.transform);
         var listViewportRect = listViewport.GetComponent<RectTransform>();
         Stretch(listViewportRect);
+        listViewportRect.offsetMax = new Vector2(-14f, -22f);
         listViewport.AddComponent<RectMask2D>();
         listScroll.viewport = listViewportRect;
 
@@ -175,11 +180,50 @@ public class CodexMenuUI : MonoBehaviour
         listContentFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         listContentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+        var listScrollbarObject = CreateUiObject("ListScrollbar", listPanel.transform);
+        var listScrollbarRect = listScrollbarObject.GetComponent<RectTransform>();
+        listScrollbarRect.anchorMin = new Vector2(1f, 0f);
+        listScrollbarRect.anchorMax = new Vector2(1f, 1f);
+        listScrollbarRect.pivot = new Vector2(1f, 0.5f);
+        listScrollbarRect.sizeDelta = new Vector2(10f, -26f);
+        listScrollbarRect.anchoredPosition = new Vector2(0f, -11f);
+
+        var listScrollbarImage = listScrollbarObject.AddComponent<Image>();
+        listScrollbarImage.color = new Color(0.1f, 0.12f, 0.1f, 0.95f);
+
+        var listScrollbar = listScrollbarObject.AddComponent<Scrollbar>();
+        listScrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+        var slidingArea = CreateUiObject("SlidingArea", listScrollbarObject.transform);
+        var slidingRect = slidingArea.GetComponent<RectTransform>();
+        Stretch(slidingRect);
+        slidingRect.offsetMin = new Vector2(2f, 2f);
+        slidingRect.offsetMax = new Vector2(-2f, -2f);
+
+        var handleObject = CreateUiObject("Handle", slidingArea.transform);
+        var handleRect = handleObject.GetComponent<RectTransform>();
+        handleRect.sizeDelta = new Vector2(0f, 48f);
+        var handleImage = handleObject.AddComponent<Image>();
+        handleImage.color = new Color(0.42f, 0.62f, 0.42f, 0.95f);
+
+        listScrollbar.handleRect = handleRect;
+        listScrollbar.targetGraphic = handleImage;
+        listScroll.verticalScrollbar = listScrollbar;
+
+        var scrollHint = CreateLabel(listPanel.transform, "Scroll wheel", 12f, TextAlignmentOptions.Center);
+        scrollHint.color = UiDisplaySettings.MutedText;
+        var scrollHintRect = scrollHint.rectTransform;
+        scrollHintRect.anchorMin = new Vector2(0f, 0f);
+        scrollHintRect.anchorMax = new Vector2(1f, 0f);
+        scrollHintRect.pivot = new Vector2(0.5f, 0f);
+        scrollHintRect.anchoredPosition = new Vector2(-6f, 4f);
+        scrollHintRect.sizeDelta = new Vector2(-12f, 18f);
+
         var detailPanel = CreateUiObject("DetailPanel", panel.transform);
         var detailRect = detailPanel.GetComponent<RectTransform>();
         detailRect.anchorMin = new Vector2(0f, 0f);
         detailRect.anchorMax = new Vector2(1f, 1f);
-        detailRect.offsetMin = new Vector2(268f, 20f);
+        detailRect.offsetMin = new Vector2(284f, 20f);
         detailRect.offsetMax = new Vector2(-20f, -104f);
 
         var detailBackground = detailPanel.AddComponent<Image>();
@@ -269,6 +313,8 @@ public class CodexMenuUI : MonoBehaviour
         RefreshTabVisuals();
         RebuildList();
         ShowSelectedEntry();
+        if (listScroll != null)
+            listScroll.verticalNormalizedPosition = 1f;
     }
 
     void RefreshTabVisuals()

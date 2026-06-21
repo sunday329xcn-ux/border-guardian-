@@ -114,13 +114,18 @@ public class TowerRangePreviewController : MonoBehaviour
             slot = selectedSlot;
         }
 
-        if (slot == null || !TowerBuildCatalog.ShowsCombatRangeRing(previewType))
+        if (slot == null || (!TowerBuildCatalog.ShowsCombatRangeRing(previewType) && !TowerBuildCatalog.ShowsSupportRangeRing(previewType)))
         {
             SetRingVisible(buildRangeRing, false);
             return;
         }
 
         var range = TowerBuildCatalog.GetPreviewRange(previewType);
+        var ringColor = TowerBuildCatalog.ShowsSupportRangeRing(previewType)
+            ? new Color(0.95f, 0.75f, 0.35f, 0.55f)
+            : new Color(0.45f, 0.85f, 0.55f, 0.55f);
+        buildRangeRing.startColor = ringColor;
+        buildRangeRing.endColor = ringColor;
         SetCircle(buildRangeRing, slot.transform.position, range);
         SetRingVisible(buildRangeRing, true);
     }
@@ -139,6 +144,22 @@ public class TowerRangePreviewController : MonoBehaviour
         if (selectedTower is DiamondMineTower)
         {
             SetRingVisible(selectedRangeRing, false);
+            SetRingVisible(synergyRangeRing, false);
+            return;
+        }
+
+        if (selectedTower is SpotterTower or BeaconTower or BountyShrineTower)
+        {
+            var supportRange = selectedTower switch
+            {
+                SpotterTower => SpotterTower.RevealRadius,
+                BeaconTower => SupportTowerService.BeaconRadius,
+                BountyShrineTower => SupportTowerService.BountyRadius,
+                _ => 0f
+            };
+
+            SetCircle(selectedRangeRing, selectedTower.transform.position, supportRange);
+            SetRingVisible(selectedRangeRing, true);
             SetRingVisible(synergyRangeRing, false);
             return;
         }

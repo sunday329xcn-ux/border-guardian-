@@ -16,6 +16,9 @@ public static class TowerFactory
             TowerType.Arcane => ArcaneTower.Build(slot),
             TowerType.Barracks => BarracksTower.Build(slot),
             TowerType.DiamondMine => DiamondMineTower.Build(slot),
+            TowerType.Spotter => SpotterTower.Build(slot),
+            TowerType.Beacon => BeaconTower.Build(slot),
+            TowerType.BountyShrine => BountyShrineTower.Build(slot),
             _ => null
         };
     }

@@ -16,7 +16,8 @@ public readonly struct EnemyStats
         bool isBoss,
         bool ignoresBarracksBlock,
         Color color,
-        float scale = 0.55f)
+        float scale = 0.55f,
+        bool requiresAntiAirOnly = false)
     {
         MaxHealth = maxHealth;
         Armor = armor;
@@ -32,6 +33,7 @@ public readonly struct EnemyStats
         IgnoresBarracksBlock = ignoresBarracksBlock;
         Color = color;
         Scale = scale;
+        RequiresAntiAirOnly = requiresAntiAirOnly;
     }
 
     public int MaxHealth { get; }
@@ -48,6 +50,7 @@ public readonly struct EnemyStats
     public bool IgnoresBarracksBlock { get; }
     public Color Color { get; }
     public float Scale { get; }
+    public bool RequiresAntiAirOnly { get; }
 }
 
 public static class EnemyCatalog
@@ -66,6 +69,12 @@ public static class EnemyCatalog
             EnemyType.WolfRider => new EnemyStats(150, 8, 0, false, 2.8f, 7, 0, 1, 0, false, false, false, new Color(0.6f, 0.45f, 0.25f)),
             EnemyType.TowerBreaker => new EnemyStats(950, 22, 12, false, 1.5f, 20, 1, 5, 0, true, false, true, new Color(0.35f, 0.35f, 0.4f), 0.8f),
             EnemyType.AncientDragon => new EnemyStats(7800, 24, 40, true, 1.6f, 80, 8, 10, 0, false, true, false, new Color(0.75f, 0.15f, 0.2f), 1.1f),
+            EnemyType.ShieldBearer => new EnemyStats(280, 14, 0, false, 1.7f, 6, 0, 1, 0, false, false, false, new Color(0.42f, 0.48f, 0.58f), 0.62f),
+            EnemyType.SplitSlime => new EnemyStats(120, 0, 0, false, 2f, 4, 0, 1, 0, false, false, false, new Color(0.35f, 0.82f, 0.42f), 0.52f),
+            EnemyType.Shade => new EnemyStats(95, 0, 15, false, 3.2f, 6, 0, 1, 0, false, false, false, new Color(0.28f, 0.18f, 0.42f), 0.48f),
+            EnemyType.WarDrummer => new EnemyStats(160, 5, 10, false, 1.5f, 7, 0, 1, 0, false, false, false, new Color(0.72f, 0.28f, 0.22f)),
+            EnemyType.Nullifier => new EnemyStats(520, 8, 25, false, 1.4f, 16, 1, 5, 0, true, false, false, new Color(0.38f, 0.22f, 0.62f), 0.72f),
+            EnemyType.BatSwarm => new EnemyStats(55, 0, 30, true, 3.5f, 5, 0, 1, 0, false, false, false, new Color(0.22f, 0.18f, 0.28f), 0.58f, requiresAntiAirOnly: true),
             _ => new EnemyStats(60, 0, 0, false, 2.5f, 1, 0, 1, 0, false, false, false, Color.red)
         };
     }
@@ -84,6 +93,12 @@ public static class EnemyCatalog
             EnemyType.WolfRider => "Wolf Rider",
             EnemyType.TowerBreaker => "Tower Breaker",
             EnemyType.AncientDragon => "Ancient Dragon",
+            EnemyType.ShieldBearer => "Shield Bearer",
+            EnemyType.SplitSlime => "Split Slime",
+            EnemyType.Shade => "Shade",
+            EnemyType.WarDrummer => "War Drummer",
+            EnemyType.Nullifier => "Nullifier",
+            EnemyType.BatSwarm => "Bat Swarm",
             _ => type.ToString()
         };
     }
@@ -101,14 +116,32 @@ public static class EnemyCatalog
         if (type == EnemyType.TowerBreaker)
             return "Very High (Tower Break)";
 
+        if (type == EnemyType.Nullifier)
+            return "Very High (Synergy Jam)";
+
         if (type == EnemyType.FireBomber)
             return "High (Explosion)";
+
+        if (type == EnemyType.Shade)
+            return "High (Stealth)";
 
         if (stealGoldOnLeak > 0)
             return "Medium (Gold Steal)";
 
         if (isElite)
             return "High (Elite)";
+
+        if (type == EnemyType.ShieldBearer)
+            return "Medium (Front Shield)";
+
+        if (type == EnemyType.SplitSlime)
+            return "Medium (Splits)";
+
+        if (type == EnemyType.WarDrummer)
+            return "Medium (Speed Aura)";
+
+        if (type == EnemyType.BatSwarm)
+            return "Medium (Anti-Air Only)";
 
         if (leakDamage >= 5)
             return "High";
@@ -140,6 +173,24 @@ public static class EnemyCatalog
                 break;
             case EnemyType.AncientDragon:
                 enemy.gameObject.AddComponent<AncientDragonBehavior>();
+                break;
+            case EnemyType.ShieldBearer:
+                enemy.gameObject.AddComponent<ShieldBearerBehavior>();
+                break;
+            case EnemyType.SplitSlime:
+                enemy.gameObject.AddComponent<SplitSlimeBehavior>();
+                break;
+            case EnemyType.Shade:
+                enemy.gameObject.AddComponent<ShadeBehavior>();
+                break;
+            case EnemyType.WarDrummer:
+                enemy.gameObject.AddComponent<WarDrummerBehavior>();
+                break;
+            case EnemyType.Nullifier:
+                enemy.gameObject.AddComponent<NullifierBehavior>();
+                break;
+            case EnemyType.BatSwarm:
+                enemy.gameObject.AddComponent<BatSwarmBehavior>();
                 break;
         }
     }

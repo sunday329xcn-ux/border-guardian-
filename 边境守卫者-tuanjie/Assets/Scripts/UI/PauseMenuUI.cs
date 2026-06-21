@@ -87,8 +87,8 @@ public class PauseMenuUI : MonoBehaviour
         rect.anchorMin = new Vector2(1f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.sizeDelta = new Vector2(72f, 36f);
-        rect.anchoredPosition = new Vector2(-ScreenPadding - 400f, -ScreenPadding);
+        rect.sizeDelta = new Vector2(UiDisplaySettings.SpeedButtonWidth, UiDisplaySettings.ControlButtonHeight);
+        rect.anchoredPosition = UiDisplaySettings.SpeedButtonAnchoredPosition;
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = buttonObject.AddComponent<Image>();
@@ -109,8 +109,8 @@ public class PauseMenuUI : MonoBehaviour
         rect.anchorMin = new Vector2(1f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);
         rect.pivot = new Vector2(1f, 1f);
-        rect.sizeDelta = new Vector2(96f, 36f);
-        rect.anchoredPosition = new Vector2(-ScreenPadding - 296f, -ScreenPadding);
+        rect.sizeDelta = new Vector2(UiDisplaySettings.PauseButtonWidth, UiDisplaySettings.ControlButtonHeight);
+        rect.anchoredPosition = UiDisplaySettings.PauseButtonAnchoredPosition;
         UiDisplaySettings.SnapRectToPixels(rect);
 
         var image = buttonObject.AddComponent<Image>();

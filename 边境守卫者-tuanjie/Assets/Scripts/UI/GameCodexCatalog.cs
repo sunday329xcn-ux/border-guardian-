@@ -30,7 +30,10 @@ public static class GameCodexCatalog
             BuildCannonEntry(),
             BuildArcaneEntry(),
             BuildBarracksEntry(),
-            BuildMineEntry()
+            BuildMineEntry(),
+            BuildSpotterEntry(),
+            BuildBeaconEntry(),
+            BuildBountyShrineEntry()
         };
     }
 
@@ -47,7 +50,13 @@ public static class GameCodexCatalog
             BuildEnemyEntry(EnemyType.ShadowPriest),
             BuildEnemyEntry(EnemyType.WolfRider),
             BuildEnemyEntry(EnemyType.TowerBreaker),
-            BuildEnemyEntry(EnemyType.AncientDragon)
+            BuildEnemyEntry(EnemyType.AncientDragon),
+            BuildEnemyEntry(EnemyType.ShieldBearer),
+            BuildEnemyEntry(EnemyType.SplitSlime),
+            BuildEnemyEntry(EnemyType.Shade),
+            BuildEnemyEntry(EnemyType.WarDrummer),
+            BuildEnemyEntry(EnemyType.Nullifier),
+            BuildEnemyEntry(EnemyType.BatSwarm)
         };
     }
 
@@ -198,8 +207,8 @@ public static class GameCodexCatalog
         body.AppendLine("Lv.2 — 80g → 10–14 dmg, 0.4s");
         body.AppendLine("Lv.3 — 120g → 14–19 dmg, 0.35s, 10% crit ×2");
         body.AppendLine("Lv.4 — 5 dia → 16–22 dmg, 0.32s, ~3.5 range, 18% crit");
-        body.AppendLine("Lv.5A Ranger — 10 dia → 20–27 dmg, 0.28s, longer synergy, focus low HP");
-        body.AppendLine("Lv.5B Siege — 10 dia → 30–42 dmg, 1.35s, long range, line pierce, no air");
+        body.AppendLine("Lv.5A Ranger — 10 dia → 20–27 dmg, 0.28s, longer synergy, focus low HP, detects Shade");
+        body.AppendLine("Lv.5B Siege — 10 dia → 30–42 dmg, 1.35s, long range, line pierce, no air, detects Shade");
 
         return new CodexEntry("arrow", "Arrow Tower", "Marksman · single-target DPS", body.ToString());
     }
@@ -285,6 +294,48 @@ public static class GameCodexCatalog
         return new CodexEntry("mine", "Diamond Mine", "Economy · passive diamonds", body.ToString());
     }
 
+    static CodexEntry BuildSpotterEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Support · no combat output.");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Spotter)}g  ·  Cannot upgrade");
+        body.AppendLine();
+        body.AppendLine("Reveal radius: 3 tiles.");
+        body.AppendLine("Reveals Shade enemies so all towers can target them.");
+        body.AppendLine("Build before wave 11 stealth pressure — Arrow Lv.5 also detects Shade.");
+
+        return new CodexEntry("spotter", "Spotter", "Support · stealth reveal", body.ToString());
+    }
+
+    static CodexEntry BuildBeaconEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Support · no combat output.");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.Beacon)}g  ·  Cannot upgrade");
+        body.AppendLine();
+        body.AppendLine("Aura radius: 2.5 tiles.");
+        body.AppendLine("Nearby combat towers gain +10% attack speed.");
+        body.AppendLine("Neutral tag — does not participate in synergy links.");
+
+        return new CodexEntry("beacon", "Beacon", "Support · attack speed aura", body.ToString());
+    }
+
+    static CodexEntry BuildBountyShrineEntry()
+    {
+        var body = new StringBuilder();
+        body.AppendLine("Support · no combat output.");
+        body.AppendLine(TowerHpLine);
+        body.AppendLine($"Build: {TowerBuildCatalog.GetBuildCost(TowerType.BountyShrine)}g  ·  Cannot upgrade");
+        body.AppendLine();
+        body.AppendLine("Aura radius: 2.8 tiles.");
+        body.AppendLine("Enemy kills inside the aura grant +15% gold.");
+        body.AppendLine("Pairs well with AoE clusters on fork lanes.");
+
+        return new CodexEntry("bounty", "Bounty Shrine", "Support · kill gold bonus", body.ToString());
+    }
+
     static CodexEntry BuildEnemyEntry(EnemyType type)
     {
         var stats = EnemyCatalog.Get(type);
@@ -352,6 +403,12 @@ public static class GameCodexCatalog
             EnemyType.WolfRider => "Ability: spawns an Imp every 15s.",
             EnemyType.TowerBreaker => "Ability: ignores soldiers; destroys nearest tower 80 dmg / 2s.",
             EnemyType.AncientDragon => "Ability: BOSS — phase 1 flying fireballs; phase 2 lands (+30 armor, flame path).",
+            EnemyType.ShieldBearer => "Ability: blocks 70% frontal physical damage; sides and rear are vulnerable.",
+            EnemyType.SplitSlime => "Ability: splits into 2 mini slimes (50% HP each) on death.",
+            EnemyType.Shade => "Ability: stealthed until 72% path; Spotter reveals; Arrow Lv.5 detects.",
+            EnemyType.WarDrummer => "Ability: +25% move speed aura (2.0 range) for nearby allies.",
+            EnemyType.Nullifier => "Ability: elite — disables tower synergies within 2.8 range for 5s.",
+            EnemyType.BatSwarm => "Ability: flying swarm; only anti-air towers can target it.",
             _ => string.Empty
         };
     }

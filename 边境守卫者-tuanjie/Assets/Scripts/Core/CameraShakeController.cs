@@ -8,6 +8,16 @@ public class CameraShakeController : MonoBehaviour
 
     void Awake()
     {
+        SyncOrigin();
+    }
+
+    void Start()
+    {
+        SyncOrigin();
+    }
+
+    public void SyncOrigin()
+    {
         originalLocalPosition = transform.localPosition;
     }
 

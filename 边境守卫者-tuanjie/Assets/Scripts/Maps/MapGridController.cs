@@ -12,6 +12,7 @@ public class MapGridController : MonoBehaviour
     [Header("Camera")]
     [SerializeField] bool autoSetupCamera = true;
     [SerializeField] float cameraOrthographicSize = 8.5f;
+    [SerializeField] float cameraVerticalUiOffset = 0.35f;
 
     readonly List<BuildSlot> buildSlots = new();
     MapCellType[,] cells;
@@ -36,9 +37,14 @@ public class MapGridController : MonoBehaviour
         BuildPathPreview();
         BuildMarkers();
         BuildEnvironment();
+        ApplyCameraFraming();
+        SnapAllBuildSlotPositions();
+    }
 
-        if (autoSetupCamera)
-            SetupCamera();
+    void OnEnable()
+    {
+        if (autoSetupCamera && cells != null)
+            ApplyCameraFraming(repositionChildren: false);
     }
 
     void EnsureRoots()
@@ -79,7 +85,7 @@ public class MapGridController : MonoBehaviour
         {
             var cellType = cells[x, y];
             var tile = CreateSpriteObject($"Tile_{x}_{y}", tilesRoot);
-            tile.transform.position = MapGridSettings.GridToWorld(x, y);
+            MapGridLayoutUtility.SnapTransformToCell(tile.transform, new Vector2Int(x, y));
             tile.transform.localScale = Vector3.one * 0.96f;
 
             var renderer = tile.GetComponent<SpriteRenderer>();
@@ -92,50 +98,83 @@ public class MapGridController : MonoBehaviour
     {
         buildSlots.Clear();
 
-        for (int x = 0; x < MapGridSettings.Width; x++)
-        for (int y = 0; y < MapGridSettings.Height; y++)
+        foreach (var gridPos in GrimmForestMapLayout.GetInitialBuildPlatformCells())
+            buildSlots.Add(CreateBuildSlot(gridPos, GrimmForestMapLayout.GetPlatformTerrain(gridPos)));
+
+        Debug.Log($"Grimm Forest build slots: {buildSlots.Count} / {GrimmForestMapLayout.TotalBuildSlotCount} (latent unlocks pending)");
+    }
+
+    public void UnlockBuildPlatform(Vector2Int gridPos, PlatformTerrainType terrainType)
+    {
+        if (cells == null || !MapGridSettings.IsInsideGrid(gridPos.x, gridPos.y))
+            return;
+
+        foreach (var existing in buildSlots)
         {
-            var cellType = cells[x, y];
-            if (cellType != MapCellType.BuildPlatform)
-                continue;
-
-            var slotObject = CreateSpriteObject($"BuildSlot_{x}_{y}", buildSlotsRoot);
-            slotObject.transform.position = MapGridSettings.GridToWorld(x, y);
-            slotObject.transform.localScale = Vector3.one * 0.72f;
-
-            var baseRenderer = slotObject.GetComponent<SpriteRenderer>();
-            baseRenderer.sortingOrder = 1;
-
-            var gridPos = new Vector2Int(x, y);
-            var terrainType = GrimmForestMapLayout.GetPlatformTerrain(gridPos);
-
-            var highlight = CreateSpriteObject("Highlight", slotObject.transform);
-            highlight.transform.localPosition = Vector3.zero;
-            highlight.transform.localScale = Vector3.one * 1.15f;
-            var highlightRenderer = highlight.GetComponent<SpriteRenderer>();
-            highlightRenderer.color = new Color(1f, 0.92f, 0.2f, 0.35f);
-            highlightRenderer.sortingOrder = 2;
-            highlightRenderer.enabled = false;
-
-            var selectionHighlight = CreateSpriteObject("SelectionHighlight", slotObject.transform);
-            selectionHighlight.transform.localPosition = Vector3.zero;
-            selectionHighlight.transform.localScale = Vector3.one * 1.22f;
-            var selectionRenderer = selectionHighlight.GetComponent<SpriteRenderer>();
-            selectionRenderer.color = new Color(0.35f, 0.85f, 0.95f, 0.55f);
-            selectionRenderer.sortingOrder = 3;
-            selectionRenderer.enabled = false;
-
-            var slot = slotObject.AddComponent<BuildSlot>();
-            slot.Initialize(gridPos, true, baseRenderer, highlightRenderer, selectionRenderer, terrainType);
-
-            var collider = slotObject.AddComponent<CircleCollider2D>();
-            collider.radius = 0.4f;
-            collider.isTrigger = true;
-
-            buildSlots.Add(slot);
+            if (existing.GridPosition == gridPos)
+                return;
         }
 
-        Debug.Log($"Grimm Forest build slots: {buildSlots.Count} / {GrimmForestMapLayout.BuildSlotCount}");
+        cells[gridPos.x, gridPos.y] = MapCellType.BuildPlatform;
+        UpdateTileVisual(gridPos.x, gridPos.y, MapCellType.BuildPlatform);
+        buildSlots.Add(CreateBuildSlot(gridPos, terrainType));
+        SnapAllBuildSlotPositions();
+    }
+
+    public void SnapAllBuildSlotPositions()
+    {
+        MapGridLayoutUtility.SnapOccupiedTowers(buildSlots);
+    }
+
+    BuildSlot CreateBuildSlot(Vector2Int gridPos, PlatformTerrainType terrainType)
+    {
+        var x = gridPos.x;
+        var y = gridPos.y;
+        var slotObject = CreateSpriteObject($"BuildSlot_{x}_{y}", buildSlotsRoot);
+        MapGridLayoutUtility.SnapTransformToCell(slotObject.transform, gridPos);
+        slotObject.transform.localScale = Vector3.one * 0.72f;
+
+        var baseRenderer = slotObject.GetComponent<SpriteRenderer>();
+        baseRenderer.sortingOrder = 1;
+
+        var highlight = CreateSpriteObject("Highlight", slotObject.transform);
+        highlight.transform.localPosition = Vector3.zero;
+        highlight.transform.localScale = Vector3.one * 1.15f;
+        var highlightRenderer = highlight.GetComponent<SpriteRenderer>();
+        highlightRenderer.color = new Color(1f, 0.92f, 0.2f, 0.35f);
+        highlightRenderer.sortingOrder = 2;
+        highlightRenderer.enabled = false;
+
+        var selectionHighlight = CreateSpriteObject("SelectionHighlight", slotObject.transform);
+        selectionHighlight.transform.localPosition = Vector3.zero;
+        selectionHighlight.transform.localScale = Vector3.one * 1.22f;
+        var selectionRenderer = selectionHighlight.GetComponent<SpriteRenderer>();
+        selectionRenderer.color = new Color(0.35f, 0.85f, 0.95f, 0.55f);
+        selectionRenderer.sortingOrder = 3;
+        selectionRenderer.enabled = false;
+
+        var slot = slotObject.AddComponent<BuildSlot>();
+        slot.Initialize(gridPos, true, baseRenderer, highlightRenderer, selectionRenderer, terrainType);
+
+        var collider = slotObject.AddComponent<CircleCollider2D>();
+        collider.radius = 0.4f;
+        collider.isTrigger = true;
+
+        return slot;
+    }
+
+    void UpdateTileVisual(int x, int y, MapCellType cellType)
+    {
+        if (tilesRoot == null)
+            return;
+
+        var tile = tilesRoot.Find($"Tile_{x}_{y}");
+        if (tile == null)
+            return;
+
+        var renderer = tile.GetComponent<SpriteRenderer>();
+        if (renderer != null)
+            renderer.color = GetCellColor(cellType);
     }
 
     void BuildRouteController()
@@ -170,6 +209,12 @@ public class MapGridController : MonoBehaviour
             environmentController = gameObject.AddComponent<MapEnvironmentController>();
 
         environmentController.BuildEnvironment(transform);
+
+        if (GetComponent<GoblinMissileController>() == null)
+            gameObject.AddComponent<GoblinMissileController>();
+
+        if (GetComponent<EasterEggController>() == null)
+            gameObject.AddComponent<EasterEggController>();
     }
 
     void BuildMarkers()
@@ -182,7 +227,7 @@ public class MapGridController : MonoBehaviour
     void CreateMarker(string markerName, Vector2Int gridCell, Color color, int sortingOrder)
     {
         var marker = CreateSpriteObject(markerName, markersRoot);
-        marker.transform.position = MapGridSettings.GridToWorld(gridCell.x, gridCell.y);
+        MapGridLayoutUtility.SnapTransformToCell(marker.transform, gridCell);
         marker.transform.localScale = Vector3.one * 0.45f;
 
         var renderer = marker.GetComponent<SpriteRenderer>();
@@ -190,18 +235,27 @@ public class MapGridController : MonoBehaviour
         renderer.sortingOrder = sortingOrder;
     }
 
-    void SetupCamera()
+    void ApplyCameraFraming(bool repositionChildren = true)
     {
+        if (repositionChildren)
+            transform.localPosition = Vector3.zero;
+
         var camera = Camera.main;
-        if (camera == null) return;
+        if (camera == null)
+            return;
 
         camera.orthographic = true;
         camera.orthographicSize = cameraOrthographicSize;
+        var mapCenterX = MapGridSettings.Width * MapGridSettings.CellSize * 0.5f;
         camera.transform.position = new Vector3(
-            MapGridSettings.Width * 0.5f - 0.5f,
-            MapGridSettings.Height * 0.5f - 0.5f,
+            mapCenterX - UiDisplaySettings.MapCameraHorizontalShift,
+            MapGridSettings.Height * MapGridSettings.CellSize * 0.5f + cameraVerticalUiOffset,
             -10f);
         camera.backgroundColor = new Color(0.12f, 0.16f, 0.12f);
+
+        var shake = camera.GetComponent<CameraShakeController>();
+        if (shake != null)
+            shake.SyncOrigin();
     }
 
     static GameObject CreateSpriteObject(string objectName, Transform parent)

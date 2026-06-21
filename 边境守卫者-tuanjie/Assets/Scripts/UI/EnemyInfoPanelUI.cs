@@ -74,7 +74,7 @@ public class EnemyInfoPanelUI : MonoBehaviour
 
     void CreatePanel()
     {
-        const float buildBarClearance = 116f;
+        const float buildBarClearance = 24f;
 
         panelRoot = CreateUiObject("EnemyInfoPanel", transform);
         var panelRect = panelRoot.GetComponent<RectTransform>();
@@ -82,7 +82,7 @@ public class EnemyInfoPanelUI : MonoBehaviour
         panelRect.anchorMax = new Vector2(1f, 0f);
         panelRect.pivot = new Vector2(1f, 0f);
         panelRect.sizeDelta = new Vector2(320f, 168f);
-        panelRect.anchoredPosition = new Vector2(-24f, buildBarClearance);
+        panelRect.anchoredPosition = new Vector2(-(UiDisplaySettings.BuildRailInsetFromRight + 12f), UiDisplaySettings.ScreenPadding);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var background = panelRoot.AddComponent<Image>();

@@ -2,6 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// HUD layout tokens. Gameplay rule: interactive controls must not overlap the map or each other.
+/// </summary>
 public static class UiDisplaySettings
 {
     public const float ScreenPadding = 24f;
@@ -9,6 +12,25 @@ public static class UiDisplaySettings
     public const float HudLeftInset = 48f;
     public const float HudTopPadding = 28f;
     public const float HudLineHeight = 42f;
+
+    public const float BuildRailWidth = 118f;
+    public const float GoblinMissileRailWidth = 220f;
+    public const float BuildRailGap = 8f;
+
+    public const float ControlButtonHeight = 36f;
+    public const float ControlButtonGap = 6f;
+    public const float ExitButtonWidth = 72f;
+    public const float SpeedButtonWidth = 72f;
+    public const float PauseButtonWidth = 96f;
+    public const float WavePanelWidth = 280f;
+    public const float WavePanelHeight = 152f;
+    public const float WaveTimelineHeight = 38f;
+    public const float UiRowGap = 8f;
+    /// <summary>Extra push for the build column toward the screen edge.</summary>
+    public const float BuildRailExtraRight = 10f;
+    /// <summary>Extra downward offset for the build column below wave controls.</summary>
+    public const float BuildRailExtraDown = 20f;
+
     public const float PanelAlpha = 0.92f;
     public const float FontSizeTitle = 24f;
     public const float FontSizeBody = 16f;
@@ -24,6 +46,53 @@ public static class UiDisplaySettings
     public static readonly Color ButtonSelected = new(0.28f, 0.48f, 0.28f, 0.95f);
     public static readonly Color ButtonDanger = new(0.35f, 0.18f, 0.18f, 0.92f);
     public static readonly Color StarGold = new(1f, 0.88f, 0.35f);
+
+    public static float RightEdgeInset => ScreenPadding + BuildRailExtraRight;
+
+    public static float ControlsRowTop => ScreenPadding;
+
+    public static float WaveTimelineTop =>
+        ControlsRowTop + ControlButtonHeight + UiRowGap;
+
+    public static float WavePanelTop =>
+        WaveTimelineTop + WaveTimelineHeight + UiRowGap;
+
+    public static float BuildPanelTop =>
+        WavePanelTop + WavePanelHeight + UiRowGap + BuildRailExtraDown;
+
+    public static float BuildRailInsetFromRight => RightEdgeInset + BuildRailWidth;
+
+    public static float GoblinMissileLeftInset => ScreenPadding;
+
+    public static float LeftInteractiveClearance => GoblinMissileLeftInset + GoblinMissileRailWidth + 16f;
+
+    public static Vector2 WavePanelAnchoredPosition => new(-RightEdgeInset, -WavePanelTop);
+
+    public static Vector2 ExitButtonAnchoredPosition => new(
+        -(RightEdgeInset + PauseButtonWidth + ControlButtonGap + SpeedButtonWidth + ControlButtonGap),
+        -ControlsRowTop);
+
+    public static Vector2 SpeedButtonAnchoredPosition => new(
+        -(RightEdgeInset + PauseButtonWidth + ControlButtonGap),
+        -ControlsRowTop);
+
+    public static Vector2 PauseButtonAnchoredPosition => new(-RightEdgeInset, -ControlsRowTop);
+
+    public static Vector2 WaveTimelineAnchoredPosition => new(-RightEdgeInset, -WaveTimelineTop);
+
+    /// World-units subtracted from map-center camera X. Larger value shifts map right on screen (clears left rail).
+    public static float MapCameraHorizontalShift
+    {
+        get
+        {
+            const float referenceScreenHeight = 1080f;
+            const float orthoHalfHeight = 8.5f;
+            var pixelsPerUnit = referenceScreenHeight / (orthoHalfHeight * 2f);
+            var leftMargin = ScreenPadding + GoblinMissileRailWidth;
+            var rightMargin = RightEdgeInset + BuildRailWidth;
+            return (leftMargin - rightMargin) * 0.5f / pixelsPerUnit;
+        }
+    }
 
     public static float UiScale => uiScale;
 

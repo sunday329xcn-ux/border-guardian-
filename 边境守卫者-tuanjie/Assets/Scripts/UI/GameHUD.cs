@@ -22,6 +22,7 @@ public class GameHUD : MonoBehaviour
     Image resourceBackground;
 
     bool statusCentered;
+    bool resourcesBound;
     Coroutine transientStatusRoutine;
 
     void Start()
@@ -38,15 +39,23 @@ public class GameHUD : MonoBehaviour
         }
 
         ApplySharpHudText();
+        TryBindGameManager();
+    }
 
-        if (GameManager.Instance == null)
-        {
-            Debug.LogError("GameManager is missing from the scene.");
+    void Update()
+    {
+        if (!resourcesBound)
+            TryBindGameManager();
+    }
+
+    void TryBindGameManager()
+    {
+        if (resourcesBound || GameManager.Instance == null)
             return;
-        }
 
         GameManager.Instance.OnResourcesChanged += Refresh;
         GameManager.Instance.OnGameOver += ShowGameOver;
+        resourcesBound = true;
         Refresh();
     }
 

@@ -49,4 +49,9 @@ public static class TowerSelectionController
         if (selectedTower == tower)
             Deselect();
     }
+
+    public static void ResetState()
+    {
+        selectedTower = null;
+    }
 }

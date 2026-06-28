@@ -99,6 +99,27 @@ public class GameUiController : MonoBehaviour
         if (GetComponent<GoblinMissileUI>() == null)
             gameObject.AddComponent<GoblinMissileUI>();
 
+        if (GetComponent<HeroController>() == null)
+            gameObject.AddComponent<HeroController>();
+
+        if (GetComponent<HeroSkillBarUI>() == null)
+            gameObject.AddComponent<HeroSkillBarUI>();
+
+        if (GetComponent<MapModifierController>() == null)
+            gameObject.AddComponent<MapModifierController>();
+
+        if (GetComponent<MapModifierHudUI>() == null)
+            gameObject.AddComponent<MapModifierHudUI>();
+
+        if (GetComponent<WaveBuffSelectionUI>() == null)
+            gameObject.AddComponent<WaveBuffSelectionUI>();
+
+        if (GetComponent<ScoreHudUI>() == null)
+            gameObject.AddComponent<ScoreHudUI>();
+
+        if (GetComponent<AtmosphereController>() == null)
+            gameObject.AddComponent<AtmosphereController>();
+
         if (GetComponent<EasterEggCelebrationUI>() == null)
             gameObject.AddComponent<EasterEggCelebrationUI>();
 
@@ -259,6 +280,7 @@ public class GameUiController : MonoBehaviour
         });
 
         towerButtonImages[towerType] = buttonObject.GetComponent<Image>();
+        ProceduralUiSkin.AddTowerIcon(buttonObject.transform, towerType);
     }
 
     static void Stretch(RectTransform rect)

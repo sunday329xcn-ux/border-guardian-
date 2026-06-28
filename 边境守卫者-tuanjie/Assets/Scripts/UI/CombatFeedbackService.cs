@@ -358,10 +358,8 @@ public class CombatFeedbackService : MonoBehaviour
         floatingCanvas.sortingOrder = 200;
         floatingCanvas.pixelPerfect = false;
 
-        var scaler = canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
-        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
+        canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
+        UiDisplaySettings.ConfigureCanvas(floatingCanvas);
 
         floatingFont = ResolveFloatingFont();
         if (floatingFont == null)

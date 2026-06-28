@@ -6,6 +6,8 @@ public class EnemyBase : MonoBehaviour
 {
     public static event Action<EnemyBase> OnPriorityEnemySpawned;
     public static event Action<EnemyBase, string> OnEnemyPresentation;
+    /// <summary>Raised when an enemy is killed by the player (not leaked). Used for hero XP (P4.1).</summary>
+    public static event Action<EnemyBase> OnEnemyKilledByPlayer;
     [SerializeField] int maxHealth = 60;
     [SerializeField] int armor = 0;
     [SerializeField] int magicResist = 0;
@@ -56,6 +58,12 @@ public class EnemyBase : MonoBehaviour
     public float PathProgress => pathFollower != null ? pathFollower.PathProgress : 0f;
     public Color DisplayColor => enemyColor;
 
+    public void SuppressRewards()
+    {
+        goldReward = 0;
+        diamondReward = 0;
+    }
+
     public void SetBlocked(bool blocked)
     {
         if (ignoresBarracksBlock)
@@ -64,7 +72,8 @@ public class EnemyBase : MonoBehaviour
         isBlocked = blocked;
     }
 
-    public static EnemyBase Spawn(EnemyType type, WaypointPath path, Vector3 position)
+    public static EnemyBase Spawn(EnemyType type, WaypointPath path, Vector3 position,
+        bool preservePosition = false, float pathProgress = -1f)
     {
         var stats = EnemyCatalog.Get(type);
         var enemyObject = new GameObject(EnemyCatalog.GetDisplayName(type));
@@ -79,8 +88,11 @@ public class EnemyBase : MonoBehaviour
         enemy.EnemyType = type;
         enemy.spriteRenderer = renderer;
         enemy.ApplyStats(stats);
+        EnemyVisualComposer.Compose(renderer, type, stats.IsElite, stats.IsBoss);
         enemy.EnsureSelectionCollider(stats.Scale);
-        enemy.Initialize(path);
+        enemy.Initialize(path, preservePosition);
+        if (preservePosition && pathProgress >= 0f)
+            enemy.pathFollower?.SyncToPathProgress(pathProgress);
         EnemyCatalog.AttachBehavior(enemy, type);
         if (stats.IsElite || stats.IsBoss)
             OnPriorityEnemySpawned?.Invoke(enemy);
@@ -105,6 +117,7 @@ public class EnemyBase : MonoBehaviour
         enemy.ApplyStats(stats);
         enemy.maxHealth = Mathf.Max(1, maxHealthOverride);
         enemy.currentHealth = enemy.maxHealth;
+        EnemyVisualComposer.Compose(renderer, type, stats.IsElite, stats.IsBoss);
         enemy.EnsureSelectionCollider(stats.Scale * 0.72f);
         enemy.Initialize(path, preservePosition: true);
         enemy.pathFollower?.SyncToPathProgress(pathProgress);
@@ -189,7 +202,8 @@ public class EnemyBase : MonoBehaviour
 
     void ApplyStats(EnemyStats stats)
     {
-        maxHealth = GameDifficultyService.ScaleEnemyHealth(stats.MaxHealth);
+        maxHealth = Mathf.RoundToInt(
+            GameDifficultyService.ScaleEnemyHealth(stats.MaxHealth) * EndlessScalingService.HealthMultiplier);
         currentArmor = stats.Armor;
         armor = stats.Armor;
         magicResist = stats.MagicResist;
@@ -404,6 +418,8 @@ public class EnemyBase : MonoBehaviour
         if (spriteRenderer == null || isDead)
             return;
 
+        GetComponent<UnitVisualDecorator>()?.Punch();
+
         if (hitFlashRoutine != null)
             StopCoroutine(hitFlashRoutine);
 
@@ -450,7 +466,10 @@ public class EnemyBase : MonoBehaviour
         isDead = true;
         EnemySelectionController.DeselectIf(this);
 
-        var rewardGold = leaked ? goldReward : SupportTowerService.CalculateGoldReward(transform.position, goldReward);
+        var rewardGold = leaked
+            ? goldReward
+            : SupportTowerService.CalculateGoldReward(transform.position, goldReward)
+              + (goldReward > 0 ? RoguelikeModifierService.KillGoldBonus : 0);
         CombatFeedbackService.ReportEnemyDeath(this, rewardGold, diamondReward, leaked);
 
         if (!leaked && GameManager.Instance != null)
@@ -460,6 +479,9 @@ public class EnemyBase : MonoBehaviour
             if (diamondReward > 0)
                 GameManager.Instance.AddDiamonds(diamondReward);
         }
+
+        if (!leaked)
+            OnEnemyKilledByPlayer?.Invoke(this);
 
         foreach (var behavior in GetComponents<EnemyBehaviorBase>())
             behavior.OnEnemyDeath(!leaked);

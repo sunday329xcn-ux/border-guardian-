@@ -95,11 +95,13 @@ public class MapEnvironmentController : MonoBehaviour
 
     public bool TryHandleClick(Vector3 worldPoint)
     {
-        var routeController = GetComponent<MapRouteController>();
-        if (routeController != null && routeController.TryHandleClick(worldPoint))
+        // Trap placement wins when a trap slot is clickable; otherwise route control
+        // handles the click (their cells can overlap on the shared map grid).
+        if (TryPlaceHunterTrap(worldPoint))
             return true;
 
-        if (TryPlaceHunterTrap(worldPoint))
+        var routeController = GetComponent<MapRouteController>();
+        if (routeController != null && routeController.TryHandleClick(worldPoint))
             return true;
 
         foreach (var tree in ancientTrees)
@@ -154,7 +156,7 @@ public class MapEnvironmentController : MonoBehaviour
     void OnTrapTriggered()
     {
         activeTrap = null;
-        trapCooldownRemaining = TrapCooldownSeconds;
+        trapCooldownRemaining = TrapCooldownSeconds * TalentService.EnvironmentCooldownMultiplier;
         RefreshTrapSlotVisuals();
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -27,6 +28,7 @@ public class WaveManager : MonoBehaviour
     int currentWaveTotalEnemies;
     int currentWaveSpawnedEnemies;
     bool gameplayStarted;
+    bool scoreSubmitted;
 
     public WaveState State { get; private set; } = WaveState.Preparation;
     public LevelId CurrentLevelId => currentLevel;
@@ -39,18 +41,94 @@ public class WaveManager : MonoBehaviour
     public float WaveSpawnProgress =>
         currentWaveTotalEnemies <= 0 ? 0f : currentWaveSpawnedEnemies / (float)currentWaveTotalEnemies;
     public WaveDefinition UpcomingWaveDefinition =>
-        currentWaveIndex >= totalWaves ? null : GrimmForestWaves.GetWave(currentWaveIndex + 1);
+        (!GameModeService.IsEndless && currentWaveIndex >= totalWaves)
+            ? null
+            : GetWaveDefinition(currentWaveIndex + 1);
+
+    public int ClearedWaves => currentWaveIndex;
+    public int CurrentRunScore =>
+        LeaderboardService.ComputeScore(currentWaveIndex, GameManager.Instance != null ? GameManager.Instance.Lives : 0);
 
     public event Action OnWaveStateChanged;
     public event Action OnWaveSpawnProgressChanged;
+    /// <summary>Raised after a non-final wave is cleared, with the cleared wave number (P4.2 buff pick).</summary>
+    public event Action<int> OnWaveCleared;
 
     void Start()
     {
+        MapPlatformUnlockService.ResetSession();
+        NullifierSuppressionService.Reset();
+        TowerSelectionController.ResetState();
+        EnemySelectionController.ResetState();
+        BuildSlotSelectionController.ResetState();
+        RoguelikeModifierService.Reset();
+        MapModifierService.Load();
+        GameModeService.Load();
+        EndlessScalingService.Reset();
+
         if (mapGridController == null)
             mapGridController = FindObjectOfType<MapGridController>();
 
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnGameOver += HandleGameOver;
+
         if (MainMenuUI.IsSessionStarted)
             StartGameplay();
+    }
+
+    void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnGameOver -= HandleGameOver;
+
+        SubmitScore();
+    }
+
+    void HandleGameOver()
+    {
+        SubmitScore();
+    }
+
+    void SubmitScore()
+    {
+        if (scoreSubmitted)
+            return;
+
+        scoreSubmitted = true;
+        LeaderboardService.Submit(GameModeService.Mode, CurrentRunScore);
+    }
+
+    WaveDefinition GetWaveDefinition(int waveNumber)
+    {
+        if (waveNumber > GrimmForestWaves.TotalWaves)
+            return EndlessWaveGenerator.Generate(waveNumber - GrimmForestWaves.TotalWaves);
+
+        var wave = GrimmForestWaves.GetWave(waveNumber);
+        if (GameModeService.EarlyBoss && waveNumber == 7)
+            wave = InjectBoss(wave);
+
+        return wave;
+    }
+
+    static WaveDefinition InjectBoss(WaveDefinition source)
+    {
+        var groups = new List<WaveSpawnGroup>(source.groups)
+        {
+            new WaveSpawnGroup
+            {
+                enemyType = EnemyType.AncientDragon,
+                count = 1,
+                spawnInterval = 2f,
+                delayBeforeGroup = 2f
+            }
+        };
+
+        return new WaveDefinition
+        {
+            note = source.note,
+            hintText = "Challenge: early boss",
+            groups = groups.ToArray()
+        };
     }
 
     public void StartGameplay()
@@ -99,7 +177,7 @@ public class WaveManager : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.IsGameOver)
             return;
 
-        if (currentWaveIndex >= totalWaves)
+        if (!GameModeService.IsEndless && currentWaveIndex >= totalWaves)
             return;
 
         if (waveRoutine != null)
@@ -116,7 +194,9 @@ public class WaveManager : MonoBehaviour
         if (GameManager.Instance == null)
             return;
 
-        var bonus = Mathf.RoundToInt((earlyStartBaseBonus + CurrentWaveNumber * 3) * callEarlyBonusMultiplier);
+        var bonus = Mathf.RoundToInt((earlyStartBaseBonus + CurrentWaveNumber * 3)
+            * callEarlyBonusMultiplier * RoguelikeModifierService.CallEarlyMultiplier
+            * TalentService.CallEarlyTalentMultiplier);
         GameManager.Instance.AddGold(bonus);
         preparationTimer = 0f;
         StartNextWave();
@@ -135,7 +215,13 @@ public class WaveManager : MonoBehaviour
         spawnFinished = false;
         OnWaveStateChanged?.Invoke();
 
-        var wave = GrimmForestWaves.GetWave(waveIndex + 1);
+        var waveNumber = waveIndex + 1;
+        if (GameModeService.IsEndless && waveNumber > GrimmForestWaves.TotalWaves)
+            EndlessScalingService.SetRound(waveNumber - GrimmForestWaves.TotalWaves);
+        else
+            EndlessScalingService.Reset();
+
+        var wave = GetWaveDefinition(waveNumber);
         currentWaveTotalEnemies = WavePreviewHelper.CountTotalEnemies(wave);
         currentWaveSpawnedEnemies = 0;
         OnWaveSpawnProgressChanged?.Invoke();
@@ -193,7 +279,7 @@ public class WaveManager : MonoBehaviour
                 GameManager.Instance.AddDiamonds(1);
         }
 
-        if (currentWaveIndex >= totalWaves)
+        if (!GameModeService.IsEndless && currentWaveIndex >= totalWaves)
         {
             if (GamePauseController.Instance != null)
                 GamePauseController.Instance.Resume();
@@ -201,10 +287,12 @@ public class WaveManager : MonoBehaviour
             State = WaveState.Victory;
             OnWaveStateChanged?.Invoke();
 
+            SubmitScore();
             ShowVictoryResult();
             return;
         }
 
+        OnWaveCleared?.Invoke(completedWave);
         BeginPreparation();
     }
 
@@ -246,9 +334,13 @@ public class WaveManager : MonoBehaviour
 
     public string GetWaveCounterText()
     {
-        return State == WaveState.Victory
-            ? "Victory"
-            : $"Wave {CurrentWaveNumber} / {totalWaves}";
+        if (State == WaveState.Victory)
+            return "Victory";
+
+        if (GameModeService.IsEndless && CurrentWaveNumber > totalWaves)
+            return $"Endless {CurrentWaveNumber - totalWaves}";
+
+        return $"Wave {CurrentWaveNumber} / {totalWaves}";
     }
 
     public string GetWaveDetailText()

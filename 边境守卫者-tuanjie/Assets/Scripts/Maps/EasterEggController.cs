@@ -150,6 +150,8 @@ public class EasterEggController : MonoBehaviour
         switch (eggId)
         {
             case EasterEggId.CornerTile:
+                if (waveManager == null)
+                    waveManager = FindObjectOfType<WaveManager>();
                 if (waveManager != null)
                     waveManager.SetCallEarlyBonusMultiplier(1.5f);
 

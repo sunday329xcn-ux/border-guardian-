@@ -61,8 +61,18 @@ public class RouteControlUI : MonoBehaviour
         if (waveManager != null)
             waveManager.OnWaveStateChanged += Refresh;
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnResourcesChanged += Refresh;
+        TryBindGameManager();
+    }
+
+    bool resourcesBound;
+
+    void TryBindGameManager()
+    {
+        if (resourcesBound || GameManager.Instance == null)
+            return;
+
+        GameManager.Instance.OnResourcesChanged += Refresh;
+        resourcesBound = true;
     }
 
     void OnDestroy()
@@ -82,6 +92,9 @@ public class RouteControlUI : MonoBehaviour
 
     void Update()
     {
+        if (!resourcesBound)
+            TryBindGameManager();
+
         if (activePopup == PopupMode.None || routeController == null)
             return;
 

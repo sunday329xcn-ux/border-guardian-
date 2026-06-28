@@ -103,7 +103,10 @@ public class GameplayExitUI : MonoBehaviour
 
         if (!wasPausedBeforeExitConfirm)
         {
-            Time.timeScale = 0f;
+            if (GamePauseController.Instance != null)
+                GamePauseController.Instance.BeginModalFreeze();
+            else
+                Time.timeScale = 0f;
             frozenForExitConfirm = true;
         }
 
@@ -124,7 +127,9 @@ public class GameplayExitUI : MonoBehaviour
         if (frozenForExitConfirm)
         {
             frozenForExitConfirm = false;
-            if (GameSpeedController.Instance != null)
+            if (GamePauseController.Instance != null)
+                GamePauseController.Instance.EndModalFreeze();
+            else if (GameSpeedController.Instance != null)
                 GameSpeedController.Instance.ApplySpeedIfRunning();
             else
                 Time.timeScale = 1f;

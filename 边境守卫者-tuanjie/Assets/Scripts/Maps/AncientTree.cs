@@ -11,8 +11,8 @@ public class AncientTree : MonoBehaviour
     Vector3 effectCenter;
     float cooldownRemaining;
     SpriteRenderer spriteRenderer;
-    Color readyColor = new Color(0.2f, 0.55f, 0.25f);
-    Color cooldownColor = new Color(0.35f, 0.35f, 0.35f);
+    Color readyColor = new Color(0.4f, 0.28f, 0.16f);
+    Color cooldownColor = new Color(0.3f, 0.24f, 0.18f);
 
     public bool IsReady => cooldownRemaining <= 0f;
 
@@ -29,8 +29,9 @@ public class AncientTree : MonoBehaviour
             spriteRenderer.sortingOrder = 3;
         }
 
-        transform.localScale = new Vector3(0.7f, 1.1f, 1f);
-        spriteRenderer.color = readyColor;
+        transform.localScale = new Vector3(0.32f, 0.7f, 1f);
+        spriteRenderer.color = new Color(0.4f, 0.28f, 0.16f);
+        EnvironmentVisual.DecorateTree(transform);
 
         var collider = gameObject.AddComponent<CircleCollider2D>();
         collider.radius = 0.55f;
@@ -63,7 +64,8 @@ public class AncientTree : MonoBehaviour
             return false;
 
         RootEntangleZone.Spawn(effectCenter, effectRadius, slowPercent, effectDuration);
-        cooldownRemaining = cooldownSeconds;
+        EnvironmentVisual.PlayTreeActivate(transform.position, effectCenter);
+        cooldownRemaining = cooldownSeconds * TalentService.EnvironmentCooldownMultiplier;
         return true;
     }
 }

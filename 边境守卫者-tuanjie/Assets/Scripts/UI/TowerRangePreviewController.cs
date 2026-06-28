@@ -53,6 +53,9 @@ public class TowerRangePreviewController : MonoBehaviour
         BuildSlotSelectionController.OnSelectionChanged -= HandleBuildPreviewChanged;
         if (buildSelector != null)
             buildSelector.OnSelectionChanged -= HandleBuildPreviewChanged;
+
+        if (lineMaterial != null)
+            Destroy(lineMaterial);
     }
 
     void HandleBuildPreviewChanged(BuildSlot _)

@@ -115,6 +115,7 @@ public static class LevelProgressService
         PlayerPrefs.DeleteKey(BestStarsKeyPrefix + (int)LevelId.GrimmForest);
         PlayerPrefs.DeleteKey(BestStarsKeyPrefix + (int)LevelId.LavafallRift);
         PlayerPrefs.Save();
+        TalentService.ResetAll();
         OnProgressChanged?.Invoke();
     }
 

@@ -45,6 +45,11 @@ public static class BuildSlotSelectionController
             Deselect();
     }
 
+    public static void ResetState()
+    {
+        selectedSlot = null;
+    }
+
     static void SetSelectionVisual(BuildSlot slot, bool enabled)
     {
         slot?.SetSelectionHighlight(enabled);

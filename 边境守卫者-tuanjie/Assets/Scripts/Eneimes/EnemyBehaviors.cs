@@ -206,7 +206,8 @@ public class WolfRiderBehavior : EnemyBehaviorBase
 
         summonTimer = SummonInterval;
         var spawnPos = transform.position + Vector3.left * 0.35f;
-        EnemyBase.Spawn(EnemyType.Imp, enemy.SpawnPath, spawnPos);
+        EnemyBase.Spawn(EnemyType.Imp, enemy.SpawnPath, spawnPos,
+            preservePosition: true, pathProgress: enemy.PathProgress);
     }
 }
 
@@ -358,6 +359,11 @@ public static class NullifierSuppressionService
         suppressUntil[tower] = endTime;
     }
 
+    public static void Reset()
+    {
+        suppressUntil.Clear();
+    }
+
     public static bool IsSuppressed(TowerBase tower)
     {
         if (tower == null)
@@ -399,6 +405,8 @@ public class SplitSlimeBehavior : EnemyBehaviorBase
     {
         isMini = true;
         transform.localScale = Vector3.one * 0.38f;
+        if (enemy != null)
+            enemy.SuppressRewards();
     }
 
     public override void OnEnemyDeath(bool killedByPlayer)

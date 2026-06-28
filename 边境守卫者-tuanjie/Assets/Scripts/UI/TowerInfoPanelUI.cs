@@ -18,6 +18,8 @@ public class TowerInfoPanelUI : MonoBehaviour
     TextMeshProUGUI sellButtonText;
     TextMeshProUGUI rallyButtonText;
 
+    bool resourcesBound;
+
     void Start()
     {
         CreatePanel();
@@ -26,8 +28,22 @@ public class TowerInfoPanelUI : MonoBehaviour
         TowerSelectionController.OnSelectionChanged += HandleSelectionChanged;
         TowerBase.OnTowerDamaged += HandleTowerDamaged;
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnResourcesChanged += RefreshPanel;
+        TryBindGameManager();
+    }
+
+    void Update()
+    {
+        if (!resourcesBound)
+            TryBindGameManager();
+    }
+
+    void TryBindGameManager()
+    {
+        if (resourcesBound || GameManager.Instance == null)
+            return;
+
+        GameManager.Instance.OnResourcesChanged += RefreshPanel;
+        resourcesBound = true;
     }
 
     void OnDestroy()

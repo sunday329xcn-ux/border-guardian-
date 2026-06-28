@@ -28,7 +28,9 @@ public abstract class TowerBase : MonoBehaviour
     public int TotalDiamondSpent => totalDiamondSpent;
     public BuildSlot OccupiedSlot => occupiedSlot;
     public float Range => range;
-    public float SynergyRange => synergyRange;
+    public float SynergyRange => synergyRange > 0.01f
+        ? synergyRange + RoguelikeModifierService.SynergyRangeBonus
+        : synergyRange;
     public bool HasSynergyUnlocked => level >= TowerRangeScaling.SynergyUnlockLevel;
     public int CurrentTowerHealth => currentTowerHealth;
     public int MaxTowerHealth => maxTowerHealth;
@@ -64,6 +66,7 @@ public abstract class TowerBase : MonoBehaviour
         ApplyTowerHealthForLevel();
         RefreshPresentation();
         OnSetupComplete();
+        TowerVisualComposer.PlayLanding(gameObject);
     }
 
     protected virtual void OnEnable()
@@ -83,6 +86,7 @@ public abstract class TowerBase : MonoBehaviour
 
         currentTowerHealth -= amount;
         OnTowerDamaged?.Invoke(this, amount);
+        GetComponent<UnitVisualDecorator>()?.Punch();
 
         if (currentTowerHealth > 0)
             return;
@@ -141,6 +145,7 @@ public abstract class TowerBase : MonoBehaviour
         totalGoldSpent += cost;
         level++;
         ApplyLevelStats();
+        ReapplyTerrainBonuses();
         ApplyTowerHealthForLevel();
         RefreshPresentation();
         return true;
@@ -158,6 +163,7 @@ public abstract class TowerBase : MonoBehaviour
         totalDiamondSpent += cost;
         level = 4;
         ApplyLevelStats();
+        ReapplyTerrainBonuses();
         ApplyTowerHealthForLevel();
         RefreshPresentation();
         return true;
@@ -176,6 +182,7 @@ public abstract class TowerBase : MonoBehaviour
         branch = selectedBranch;
         level = 5;
         ApplyLevelStats();
+        ReapplyTerrainBonuses();
         ApplyTowerHealthForLevel();
         RefreshPresentation();
         return true;
@@ -197,6 +204,8 @@ public abstract class TowerBase : MonoBehaviour
             return false;
 
         GameManager.Instance.AddGold(totalGoldSpent / 2);
+        if (totalDiamondSpent > 0)
+            GameManager.Instance.AddDiamonds(totalDiamondSpent / 2);
         OnSold();
         if (occupiedSlot != null)
             occupiedSlot.Release(this);
@@ -308,6 +317,12 @@ public abstract class TowerBase : MonoBehaviour
 
     protected virtual void ApplyFragileDamageBonus() { }
 
+    void ReapplyTerrainBonuses()
+    {
+        if (occupiedSlot != null)
+            PlatformTerrainCatalog.ApplyTerrainBonuses(this, occupiedSlot.TerrainType);
+    }
+
     public void SetSelectedVisual(bool selected)
     {
         if (spriteRenderer == null)
@@ -324,6 +339,9 @@ public abstract class TowerBase : MonoBehaviour
 
         if (spriteRenderer != null && TowerSelectionController.Selected != this)
             spriteRenderer.color = normalColor;
+
+        if (spriteRenderer != null)
+            TowerVisualComposer.Compose(spriteRenderer, TowerType, level, branch);
     }
 
     protected abstract void ApplyLevelStats();

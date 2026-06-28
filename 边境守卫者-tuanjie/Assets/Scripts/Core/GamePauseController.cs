@@ -7,8 +7,9 @@ public class GamePauseController : MonoBehaviour
 
     WaveManager waveManager;
     bool isPaused;
+    bool modalFreeze;
 
-    public bool IsPaused => isPaused;
+    public bool IsPaused => isPaused || modalFreeze;
 
     public event Action<bool> OnPauseChanged;
 
@@ -37,8 +38,15 @@ public class GamePauseController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-            TogglePause();
+        if (!Input.GetKeyDown(KeyCode.Escape))
+            return;
+
+        // Esc only toggles pause during an active gameplay session, and never
+        // while a modal (e.g. exit confirm) has frozen time.
+        if (!MainMenuUI.IsSessionStarted || modalFreeze)
+            return;
+
+        TogglePause();
     }
 
     void OnDestroy()
@@ -57,10 +65,43 @@ public class GamePauseController : MonoBehaviour
         if (GameManager.Instance == null || GameManager.Instance.IsGameOver)
             return false;
 
+        if (waveManager == null)
+            waveManager = FindObjectOfType<WaveManager>();
+
         if (waveManager != null && waveManager.State == WaveState.Victory)
             return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// Freeze time for a modal overlay (e.g. exit confirm) without flipping the
+    /// pause state / firing OnPauseChanged. IsPaused still reports true so other
+    /// systems (drag-build, previews) stay consistent.
+    /// </summary>
+    public void BeginModalFreeze()
+    {
+        if (modalFreeze)
+            return;
+
+        modalFreeze = true;
+        Time.timeScale = 0f;
+    }
+
+    public void EndModalFreeze()
+    {
+        if (!modalFreeze)
+            return;
+
+        modalFreeze = false;
+
+        if (isPaused)
+            return;
+
+        if (GameSpeedController.Instance != null)
+            GameSpeedController.Instance.ApplySpeedIfRunning();
+        else
+            Time.timeScale = 1f;
     }
 
     public void TogglePause()

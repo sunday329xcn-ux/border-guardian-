@@ -1,11 +1,11 @@
 # 《Grimm Forest 零美术资产技术清单》
 
-**版本：** 1.0  
-**日期：** 2026-06-20  
+**版本：** 1.1  
+**日期：** 2026-06-28  
 **适用工程：** `边境守卫者-tuanjie/`（Tuanjie / Unity 2D 正交）  
 **关联文档：** [《边境守卫者》游戏开发文档 (GDD).md](./《边境守卫者》游戏开发文档%20(GDD).md)  
 **定位：** 独立开发者、**零外包原画**前提下，仅使用 **代码 + Unity 内置能力** 提升格林姆森林观感的技术规格与实施清单。  
-**状态：** 规划文档 — **尚未实施**
+**状态：** **P-A0 ~ P-A8 全部已实现**（垂直切片已铺开到 6 塔 / 16 敌人 / 全地图 / UI 皮肤 / 氛围层）
 
 ---
 
@@ -489,59 +489,60 @@ Icon 置于按钮左上，价格仍在下方 — 与 `TowerBuildDragHandler` gho
 
 ### P-A0 基础设施
 
-- [ ] `VisualPalette`：环境 + 塔 + 语义色常量
-- [ ] `VisualSorting`：layer order 常量
-- [ ] `ProceduralSpriteFactory`：`GetWhiteSprite()` 包装 + 噪声纹理缓存
-- [ ] `TowerVisualComposer` / `EnemyVisualComposer` 空壳 + 单测场景
+- [x] `VisualPalette`：环境 + 塔 + 语义色常量
+- [x] `VisualSorting`：layer order 常量
+- [x] `ProceduralSpriteFactory`：`GetWhiteSprite()` 包装 + 噪声/圆/影/三角/菱形/环/圆角9-slice 纹理缓存
+- [x] `TowerVisualComposer` / `EnemyVisualComposer` 空壳 → 已升级为实装
 
 ### P-A1 单位通用
 
-- [ ] 阴影 prefab 式工厂（代码创建）
-- [ ] 描边或 duplicate back sprite
-- [ ] 受击 scale punch（`ReduceMotion` 尊重）
-- [ ] 敌人移动 bob + 朝向
+- [x] 阴影工厂（`UnitVisualDecorator` 代码创建软影）
+- [x] 受击 scale punch（敌人 `PlayHitFlash` / 塔 `TakeTowerDamage` 触发，尊重 `ReduceMotion`）
+- [x] 敌人 idle 挤压 bob（位置由 PathFollower 控制，bob 走 localScale 避免冲突）
+- [~] 描边/朝向：为避免与逻辑 sprite（选中/受击/隐身改 root 颜色）冲突，改用「彩色 root + 几何 accent 子件」表达层级，未做整体 outline / root 旋转
 
 ### P-A2 投射物
 
-- [ ] `ProjectilePool` + Arrow/Frost/Cannon/Arcane 四类
-- [ ] `CombatTowerBase` 挂接（仅视觉）
-- [ ] Cannon 爆炸粒子
+- [x] `ProjectileVisualFactory` 池（size 32）+ Arrow/Frost/Cannon/Arcane 四类（Arrow 旋向、Frost trail、Cannon 抛物线、Arcane 自转）
+- [x] `CombatTowerBase.ApplyDamageToEnemy` 挂接（仅视觉、尊重 ReduceMotion）
+- [x] Cannon 命中橙色扩散爆点（`ProjectileImpactFx`）
 
 ### P-A3 地图
 
-- [ ] 草地/路径/高台程序纹理
-- [ ] BuildSlot pulse 高亮
-- [ ] 出生点/终点几何 marker
-- [ ] （可选）视差 2 层
+- [x] 草地/路径/高台/阻挡 Perlin 程序纹理（每类型 1 张缓存复用 + grass/blocked 哈希转角）
+- [x] BuildSlot 空闲慢速 pulse 环（`BuildSlotPulse`，占用时隐藏）
+- [x] 出生点门洞三角 / 终点同心环+菱形 marker（goal pulse）
+- [ ] （可选）视差 2 层 — 暂未做（氛围层已用 vignette 收敛视线）
 
 ### P-A4 塔 Silhouette
 
-- [ ] 6 塔 Compose 表实现
-- [ ] Lv 装饰层级
-- [ ] Lv5 分支 RefreshBranch
-- [ ] 建造落地动画
+- [x] 6 塔（+3 支援塔）Compose 几何 accent
+- [x] Lv 装饰层级（底部 1~5 level pip）
+- [x] Lv5 分支 accent（暖/冷 + 形状，随 `RefreshPresentation` 重建）
+- [x] 建造落地 0→1.12→1 动画（`TowerLandingAnim`）
+- [x] 士兵：阴影 + 头部 accent
 
 ### P-A5 敌人 Silhouette
 
-- [ ] 10 敌人按优先级实现
-- [ ] 精英环 / BOSS 双环
-- [ ] 死亡粒子按 `DisplayColor`
+- [x] 16 敌人全部 Compose 几何 accent（清单 10 主敌人 + P2.1 扩展 6 敌人）
+- [x] 精英金环 / BOSS 双环
+- [x] 死亡粒子按 `DisplayColor`（沿用 `CombatFeedbackService.ReportEnemyDeath`）
 
 ### P-A6 环境
 
-- [ ] 古树三态
-- [ ] 陷阱放置/触发/CD  visual
+- [x] 古树三态（棕干 + 绿冠，ready 时绿冠 pulse，激活时根须线 + 绿扩散环）
+- [x] 陷阱放置 X 提示 / 触发白闪环 / CD（沿用槽位状态色）
 
 ### P-A7 后处理
 
-- [ ] Global Volume Profile
-- [ ] Bloom 与 Reduce Motion 开关联动
+- [x] 零依赖屏幕空间 vignette 覆盖层（`AtmosphereController`，渲染于地图之上、HUD 之下，不遮挡 HUD）
+- [~] Bloom / URP Volume：当前工程未配置 URP Volume，改用程序 vignette；Bloom 留待接入 URP 后补
 
 ### P-A8 UI 皮肤
 
-- [ ] 程序 9-slice 面板
-- [ ] 建造栏 6 几何 icon
-- [ ] Pause/Victory fade
+- [x] 程序圆角 9-slice 面板（`ProceduralUiSkin` + `UiDisplaySettings.ApplyPanelBackground` 全局生效）
+- [x] 建造栏 6 塔几何 icon（按钮左上）
+- [x] Pause / Victory 面板 `CanvasGroup` fade in（`UiFadeIn`，尊重 ReduceMotion）
 
 ---
 
@@ -582,6 +583,7 @@ Icon 置于按钮左上，价格仍在下方 — 与 `TowerBuildDragHandler` gho
 | 版本 | 日期 | 摘要 |
 | --- | --- | --- |
 | 1.0 | 2026-06-20 | 首版：Grimm Forest 全图零外包资产技术规格、分塔/分敌人 Silhouette、分阶段检查表 |
+| 1.1 | 2026-06-28 | P-A0~P-A8 全部落地：`Scripts/Visual/` 新增几何/投射物/地图纹理/单位装饰/环境/氛围/UI 皮肤层，挂接现有塔/敌人/士兵/地图/环境/UI 入口，逻辑不变；勾选检查表并标注 描边整体 outline、视差、URP Bloom 三项为后续可选项 |
 
 ---
 

@@ -164,6 +164,7 @@ public static class UiDisplaySettings
 
         image.color = new Color(0.08f, 0.1f, 0.08f, alpha);
         image.raycastTarget = true;
+        ProceduralUiSkin.ApplyPanel(image);
     }
 
     public static void ApplyDimOverlay(Image image)

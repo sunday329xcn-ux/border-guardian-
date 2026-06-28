@@ -250,6 +250,9 @@ public abstract class CombatTowerBase : TowerBase
 
     void ApplyDamageToEnemy(EnemyBase target)
     {
+        if (target != null && !CombatFeedbackService.ReduceMotion)
+            ProjectileVisualFactory.Fire(TowerType, transform.position, target.transform.position);
+
         var damage = RollDamage() + stackedBonusDamage;
         var damageType = GetDamageType();
         var isCrit = critChance > 0f && Random.value < critChance;
@@ -356,7 +359,10 @@ public abstract class CombatTowerBase : TowerBase
             damage = Mathf.RoundToInt(damage * (1f + breachArcaneBonus));
         }
 
-        return damage;
+        // Hero passive aura (P4.1) + roguelike "Sharpened Arms" buff (P4.2).
+        var multiplier = HeroAuraService.GetDamageMultiplier(transform.position)
+            * RoguelikeModifierService.TowerDamageMultiplier;
+        return Mathf.RoundToInt(damage * multiplier);
     }
 
     public void AddTemporaryDamageBonus(int amount, float duration)
@@ -383,7 +389,7 @@ public abstract class CombatTowerBase : TowerBase
 
     DamageType GetDamageType()
     {
-        return TowerType is TowerType.Frost or TowerType.Arcane ? DamageType.Magic : DamageType.Physical;
+        return TowerType is TowerType.Frost ? DamageType.Magic : DamageType.Physical;
     }
 
     void ApplySlowFromTower(EnemyBase target)

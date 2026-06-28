@@ -34,6 +34,7 @@ public class HunterTrap : MonoBehaviour
         spriteRenderer.sprite = MapGridControllerShared.GetWhiteSprite();
         spriteRenderer.color = new Color(0.85f, 0.55f, 0.15f, 0.85f);
         spriteRenderer.sortingOrder = 3;
+        EnvironmentVisual.DecorateTrap(transform);
     }
 
     void Update()
@@ -62,6 +63,7 @@ public class HunterTrap : MonoBehaviour
         consumed = true;
         enemy.TakeDamage(TrapDamage, DamageType.True);
         enemy.ApplyRoot(RootDuration);
+        EnvironmentVisual.PlayTrapTrigger(transform.position);
         onTriggered?.Invoke();
         Destroy(gameObject);
     }

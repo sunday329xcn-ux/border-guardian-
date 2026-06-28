@@ -32,6 +32,11 @@ public static class EnemySelectionController
         Select(null);
     }
 
+    public static void ResetState()
+    {
+        selectedEnemy = null;
+    }
+
     public static void DeselectIf(EnemyBase enemy)
     {
         if (selectedEnemy == enemy)

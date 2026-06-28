@@ -35,7 +35,7 @@ public class GameManager : MonoBehaviour
 
     public void ApplySessionStart()
     {
-        startingGold = GameDifficultyService.GetStartingGold();
+        startingGold = GameDifficultyService.GetStartingGold() + TalentService.StartingGoldBonus;
         startingLives = GameDifficultyService.GetStartingLives();
         ResetResources();
     }

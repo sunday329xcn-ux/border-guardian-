@@ -57,7 +57,6 @@ public class MapRouteController : MonoBehaviour
 
         activeBlock = RouteBlockType.None;
         blockCooldownEndTime = Time.time + BlockCooldownSeconds;
-        routeCache.Clear();
         RefreshVisuals();
         OnRouteStateChanged?.Invoke();
     }
@@ -77,7 +76,6 @@ public class MapRouteController : MonoBehaviour
             return false;
 
         forkMode = mode;
-        routeCache.Clear();
         RefreshVisuals();
         OnRouteStateChanged?.Invoke();
         return true;
@@ -102,7 +100,6 @@ public class MapRouteController : MonoBehaviour
 
         activeBlock = blockType;
         blockEndTime = Time.time + BlockDurationSeconds;
-        routeCache.Clear();
         RefreshVisuals();
         OnRouteStateChanged?.Invoke();
         return true;

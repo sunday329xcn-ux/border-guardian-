@@ -8,6 +8,7 @@ public class GameDebugInput : MonoBehaviour
 {
     void Update()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (GameManager.Instance == null) return;
 
         if (Input.GetKeyDown(KeyCode.G))
@@ -24,5 +25,6 @@ public class GameDebugInput : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.K))
             LevelProgressService.ResetAllProgress();
+#endif
     }
 }

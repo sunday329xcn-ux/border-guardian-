@@ -23,7 +23,7 @@ public class EnemySlowEffect : MonoBehaviour
 
     public void ApplySlow(float slowPercent, float duration)
     {
-        slowPercent = Mathf.Clamp01(slowPercent);
+        slowPercent = Mathf.Clamp01(slowPercent * MapModifierService.SlowMultiplier);
         duration = Mathf.Max(0f, duration);
 
         slowMultiplier = Mathf.Min(slowMultiplier, 1f - slowPercent);

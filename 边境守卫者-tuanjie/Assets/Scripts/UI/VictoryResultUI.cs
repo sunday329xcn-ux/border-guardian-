@@ -51,13 +51,21 @@ public class VictoryResultUI : MonoBehaviour
 
     static string BuildUnlockText(int totalKeys)
     {
-        if (LevelProgressService.IsLevelUnlocked(LevelId.LavafallRift))
-            return "Lavafall Rift unlocked! (Coming soon)";
+        var available = TalentService.AvailableKeys;
+        var owned = 0;
+        foreach (var id in TalentService.All)
+        {
+            if (TalentService.IsPurchased(id))
+                owned++;
+        }
 
-        var needed = LevelProgressService.LavafallRiftKeyCost - totalKeys;
-        return needed > 0
-            ? $"Lavafall Rift locked · Need {needed} more key(s) ({totalKeys}/{LevelProgressService.LavafallRiftKeyCost})"
-            : "Lavafall Rift unlocked! (Coming soon)";
+        var total = TalentService.All.Count;
+        if (owned >= total)
+            return "All talents unlocked!  (Main Menu → Talents)";
+
+        return available > 0
+            ? $"Talents: {owned}/{total} unlocked · {available} key(s) ready to spend (Main Menu → Talents)"
+            : $"Talents: {owned}/{total} unlocked · earn more stars for keys (Main Menu → Talents)";
     }
 
     void Hide()
@@ -95,6 +103,7 @@ public class VictoryResultUI : MonoBehaviour
 
         var dim = overlayRoot.AddComponent<Image>();
         UiDisplaySettings.ApplyDimOverlay(dim);
+        ProceduralUiSkin.AttachFade(overlayRoot);
 
         var panel = CreateUiObject("VictoryPanel", overlayRoot.transform);
         var panelRect = panel.GetComponent<RectTransform>();

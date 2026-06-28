@@ -40,6 +40,7 @@ public class SoldierUnit : MonoBehaviour
     float moveSpeed = 2.2f;
     Vector3 holdPosition;
     EnemyBase engagedEnemy;
+    float lifetimeRemaining = -1f;
 
     public bool IsAlive => currentHealth > 0;
 
@@ -52,7 +53,13 @@ public class SoldierUnit : MonoBehaviour
         var renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = MapGridControllerShared.GetWhiteSprite();
         renderer.color = color;
-        renderer.sortingOrder = 6;
+        renderer.sortingOrder = VisualSorting.Soldiers;
+
+        UnitVisualDecorator.Attach(go, new Vector2(0.9f, 0.4f), enableBob: false);
+        var head = VisualPrimitives.Add(go.transform, "Head", VisualShape.Circle,
+            Color.Lerp(color, Color.white, 0.5f), new Vector2(0.55f, 0.55f), new Vector2(0f, 0.32f),
+            VisualSorting.Soldiers);
+        head.transform.localPosition = new Vector3(0f, 0.32f, -0.05f);
 
         go.AddComponent<CircleCollider2D>().radius = 0.35f;
 
@@ -70,17 +77,46 @@ public class SoldierUnit : MonoBehaviour
     }
 
     void OnEnable() => SoldierRegistry.Register(this);
-    void OnDisable() => SoldierRegistry.Unregister(this);
+
+    void OnDisable()
+    {
+        SoldierRegistry.Unregister(this);
+        ReleaseEngagedEnemy();
+    }
+
+    void ReleaseEngagedEnemy()
+    {
+        if (engagedEnemy != null && !engagedEnemy.IsDead)
+            engagedEnemy.SetBlocked(false);
+
+        engagedEnemy = null;
+    }
 
     public void SetHoldPosition(Vector3 position)
     {
         holdPosition = position;
     }
 
+    /// <summary>Marks this soldier as temporary; it auto-expires after the given seconds (hero Reinforce, P4.1).</summary>
+    public void SetTemporaryLifetime(float seconds)
+    {
+        lifetimeRemaining = Mathf.Max(0f, seconds);
+    }
+
     void Update()
     {
         if (!IsAlive)
             return;
+
+        if (lifetimeRemaining >= 0f)
+        {
+            lifetimeRemaining -= Time.deltaTime;
+            if (lifetimeRemaining <= 0f)
+            {
+                Die();
+                return;
+            }
+        }
 
         if (engagedEnemy == null || engagedEnemy.IsDead)
             engagedEnemy = FindNearestEnemyInRange(1.1f);
@@ -144,6 +180,8 @@ public class SoldierUnit : MonoBehaviour
     void Die()
     {
         var deathPosition = transform.position;
+        ReleaseEngagedEnemy();
+
         if (owner != null)
             owner.NotifySoldierDeath(this, deathPosition);
 

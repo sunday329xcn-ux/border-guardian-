@@ -26,6 +26,8 @@ public class MapGridController : MonoBehaviour
     public MapCellType[,] Cells => cells;
     public MapEnvironmentController Environment => environmentController;
     public MapRouteController Route => routeController;
+    public Transform TilesRoot => tilesRoot;
+    public Transform MarkersRoot => markersRoot;
 
     void Awake()
     {
@@ -39,6 +41,7 @@ public class MapGridController : MonoBehaviour
         BuildEnvironment();
         ApplyCameraFraming();
         SnapAllBuildSlotPositions();
+        ProceduralMapVisual.Apply(this);
     }
 
     void OnEnable()
@@ -160,6 +163,7 @@ public class MapGridController : MonoBehaviour
         collider.radius = 0.4f;
         collider.isTrigger = true;
 
+        slotObject.AddComponent<BuildSlotPulse>().Bind(slot, baseRenderer);
         return slot;
     }
 

@@ -135,6 +135,7 @@ public class PauseMenuUI : MonoBehaviour
 
         var dim = overlayRoot.AddComponent<Image>();
         UiDisplaySettings.ApplyDimOverlay(dim);
+        ProceduralUiSkin.AttachFade(overlayRoot);
 
         var panel = CreateUiObject("PausePanel", overlayRoot.transform);
         var panelRect = panel.GetComponent<RectTransform>();

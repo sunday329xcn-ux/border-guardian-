@@ -7,9 +7,21 @@ public static class TowerBuildService
         if (!TowerBuildCatalog.IsImplemented(type))
             return false;
 
+        if (GameModeService.IsTowerDisabled(type))
+        {
+            TowerBuildFeedback.Show("This tower is disabled for this challenge.");
+            return false;
+        }
+
         if (slot == null || !slot.CanAcceptBuild())
         {
             TowerBuildFeedback.ShowSelectPlatformFirst();
+            return false;
+        }
+
+        if (TowerRegistry.ActiveTowers.Count >= GameModeService.MaxTowers)
+        {
+            TowerBuildFeedback.Show($"Tower limit reached ({GameModeService.MaxTowers}).");
             return false;
         }
 

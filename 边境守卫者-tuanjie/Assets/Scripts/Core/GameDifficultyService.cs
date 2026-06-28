@@ -9,13 +9,26 @@ public enum GameDifficulty
 
 public static class GameDifficultyService
 {
-    static GameDifficulty current = GameDifficulty.Normal;
+    const string DifficultyPrefKey = "bg.difficulty";
+
+    static GameDifficulty current = LoadDifficulty();
 
     public static GameDifficulty Current => current;
 
     public static void SetDifficulty(GameDifficulty difficulty)
     {
         current = difficulty;
+        PlayerPrefs.SetInt(DifficultyPrefKey, (int)difficulty);
+        PlayerPrefs.Save();
+    }
+
+    static GameDifficulty LoadDifficulty()
+    {
+        var stored = PlayerPrefs.GetInt(DifficultyPrefKey, (int)GameDifficulty.Normal);
+        if (stored < (int)GameDifficulty.Easy || stored > (int)GameDifficulty.Heroic)
+            return GameDifficulty.Normal;
+
+        return (GameDifficulty)stored;
     }
 
     public static string GetDisplayName(GameDifficulty difficulty)

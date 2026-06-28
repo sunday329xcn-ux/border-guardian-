@@ -37,9 +37,14 @@ public class MainMenuUI : MonoBehaviour
 
     CodexMenuUI codexMenu;
     SettingsMenuUI settingsMenu;
+    TalentMenuUI talentMenu;
     GameUiController gameUi;
     WaveManager waveManager;
     GameObject mapRoot;
+
+    TextMeshProUGUI modeValueText;
+    TextMeshProUGUI challengeValueText;
+    TextMeshProUGUI bestScoreText;
 
     void Awake()
     {
@@ -57,6 +62,10 @@ public class MainMenuUI : MonoBehaviour
         settingsMenu = GetComponent<SettingsMenuUI>();
         if (settingsMenu == null)
             settingsMenu = gameObject.AddComponent<SettingsMenuUI>();
+
+        talentMenu = GetComponent<TalentMenuUI>();
+        if (talentMenu == null)
+            talentMenu = gameObject.AddComponent<TalentMenuUI>();
 
         CreateOverlay();
 
@@ -79,6 +88,7 @@ public class MainMenuUI : MonoBehaviour
         homePanel.SetActive(true);
         loadingPanel.SetActive(false);
         settingsMenu?.Hide();
+        talentMenu?.Hide();
         codexMenu?.HideFromFrontEnd();
 
         if (mapRoot != null)
@@ -169,12 +179,21 @@ public class MainMenuUI : MonoBehaviour
         settingsMenu?.Show(ShowHome);
     }
 
+    void OpenTalents()
+    {
+        homePanel.SetActive(false);
+        overlayRoot.SetActive(false);
+        talentMenu?.Show(ShowHome);
+    }
+
     void ShowHome()
     {
         settingsMenu?.Hide();
+        talentMenu?.Hide();
         codexMenu?.HideFromFrontEnd();
         overlayRoot.SetActive(true);
         homePanel.SetActive(true);
+        RefreshRunSetup();
     }
 
     void QuitGame()
@@ -218,23 +237,34 @@ public class MainMenuUI : MonoBehaviour
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(420f, 360f);
+        panelRect.sizeDelta = new Vector2(420f, 520f);
         UiDisplaySettings.SnapRectToPixels(panelRect);
 
         var panelBackground = panel.AddComponent<Image>();
         UiDisplaySettings.ApplyPanelBackground(panelBackground, 0.96f);
 
         var title = CreateLabel(panel.transform, "Border Guard", 42f, TextAlignmentOptions.Center);
-        LayoutTop(title.rectTransform, -28f, 52f, stretch: true);
+        LayoutTop(title.rectTransform, -24f, 52f, stretch: true);
 
         var subtitle = CreateLabel(panel.transform, "Grimm Forest", 20f, TextAlignmentOptions.Center);
         subtitle.color = new Color(0.78f, 0.85f, 0.75f);
-        LayoutTop(subtitle.rectTransform, -84f, 28f, stretch: true);
+        LayoutTop(subtitle.rectTransform, -78f, 28f, stretch: true);
 
-        CreateMenuButton(panel.transform, "Play", -132f, new Color(0.28f, 0.48f, 0.28f, 0.95f), StartGame);
-        CreateMenuButton(panel.transform, "Codex", -188f, new Color(0.22f, 0.28f, 0.22f, 0.95f), OpenCodex);
-        CreateMenuButton(panel.transform, "Settings", -244f, new Color(0.22f, 0.28f, 0.22f, 0.95f), OpenSettings);
-        CreateMenuButton(panel.transform, "Quit", -300f, new Color(0.35f, 0.18f, 0.18f, 0.95f), QuitGame);
+        GameModeService.Load();
+        modeValueText = CreateCycleRow(panel.transform, -118f, OnCycleMode);
+        challengeValueText = CreateCycleRow(panel.transform, -160f, OnCycleChallenge);
+
+        bestScoreText = CreateLabel(panel.transform, string.Empty, 15f, TextAlignmentOptions.Center);
+        bestScoreText.color = new Color(0.82f, 0.88f, 0.82f);
+        LayoutTop(bestScoreText.rectTransform, -196f, 22f, stretch: true);
+
+        CreateMenuButton(panel.transform, "Play", -228f, new Color(0.28f, 0.48f, 0.28f, 0.95f), StartGame);
+        CreateMenuButton(panel.transform, "Talents", -278f, new Color(0.24f, 0.3f, 0.36f, 0.95f), OpenTalents);
+        CreateMenuButton(panel.transform, "Codex", -322f, new Color(0.22f, 0.28f, 0.22f, 0.95f), OpenCodex);
+        CreateMenuButton(panel.transform, "Settings", -366f, new Color(0.22f, 0.28f, 0.22f, 0.95f), OpenSettings);
+        CreateMenuButton(panel.transform, "Quit", -410f, new Color(0.35f, 0.18f, 0.18f, 0.95f), QuitGame);
+
+        RefreshRunSetup();
 
         loadingPanel = CreateUiObject("LoadingPanel", overlayRoot.transform);
         Stretch(loadingPanel.GetComponent<RectTransform>());
@@ -302,6 +332,54 @@ public class MainMenuUI : MonoBehaviour
 
         var text = CreateLabel(buttonObject.transform, label, 20f, TextAlignmentOptions.Center);
         Stretch(text.rectTransform);
+    }
+
+    TextMeshProUGUI CreateCycleRow(Transform parent, float y, UnityEngine.Events.UnityAction onCycle)
+    {
+        var buttonObject = CreateUiObject("CycleRow", parent);
+        var rect = buttonObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, y);
+        rect.sizeDelta = new Vector2(320f, 36f);
+        UiDisplaySettings.SnapRectToPixels(rect);
+
+        var image = buttonObject.AddComponent<Image>();
+        image.color = new Color(0.2f, 0.26f, 0.2f, 0.95f);
+
+        var button = buttonObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        button.onClick.AddListener(onCycle);
+
+        var label = CreateLabel(buttonObject.transform, string.Empty, 17f, TextAlignmentOptions.Center);
+        Stretch(label.rectTransform);
+        return label;
+    }
+
+    void OnCycleMode()
+    {
+        GameModeService.CycleMode();
+        RefreshRunSetup();
+    }
+
+    void OnCycleChallenge()
+    {
+        GameModeService.CycleChallenge();
+        RefreshRunSetup();
+    }
+
+    void RefreshRunSetup()
+    {
+        if (modeValueText != null)
+            modeValueText.text = $"Mode: {GameModeService.ModeName(GameModeService.Mode)}";
+
+        if (challengeValueText != null)
+            challengeValueText.text = $"Challenge: {GameModeService.ChallengeName(GameModeService.Challenge)}";
+
+        if (bestScoreText != null)
+            bestScoreText.text =
+                $"Best ({GameModeService.ModeName(GameModeService.Mode)}): {LeaderboardService.GetBest(GameModeService.Mode)}";
     }
 
     static void LayoutTop(RectTransform rect, float y, float height, bool stretch = false)

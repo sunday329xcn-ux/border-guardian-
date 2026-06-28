@@ -42,6 +42,9 @@ public class TowerBuildController : MonoBehaviour
 
         var worldPoint = GetMouseWorldPosition();
 
+        if (TryHandleHeroSkillCast(worldPoint))
+            return;
+
         if (TryHandleGoblinMissileLaunch(worldPoint))
             return;
 
@@ -55,6 +58,15 @@ public class TowerBuildController : MonoBehaviour
             return;
 
         HandleWorldClick(worldPoint);
+    }
+
+    bool TryHandleHeroSkillCast(Vector3 worldPoint)
+    {
+        var hero = HeroController.Instance;
+        if (hero == null || !hero.IsMeteorArmed)
+            return false;
+
+        return hero.TryCastArmedSkillAt(worldPoint);
     }
 
     bool TryHandleGoblinMissileLaunch(Vector3 worldPoint)

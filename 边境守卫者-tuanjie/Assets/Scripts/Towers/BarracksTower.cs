@@ -16,6 +16,7 @@ public class BarracksTower : TowerBase
     int soldierMaxDamage;
     float respawnInterval = 8f;
     float respawnTimer;
+    float soldierAttackInterval = 1f;
     int deathExplosionDamage;
     Color soldierColor = new Color(0.35f, 0.55f, 0.95f);
 
@@ -103,28 +104,28 @@ public class BarracksTower : TowerBase
         {
             case 1:
                 soldierCount = 2; soldierHp = 80; soldierArmor = 0; soldierMinDamage = 2; soldierMaxDamage = 4;
-                respawnInterval = 8f;
+                respawnInterval = 8f; soldierAttackInterval = 1f;
                 break;
             case 2:
                 soldierCount = 3; soldierHp = 140; soldierArmor = 5; soldierMinDamage = 5; soldierMaxDamage = 8;
-                respawnInterval = 7f; deathExplosionDamage = 10;
+                respawnInterval = 7f; deathExplosionDamage = 10; soldierAttackInterval = 0.9f;
                 break;
             case 3:
                 soldierCount = 3; soldierHp = 200; soldierArmor = 10; soldierMinDamage = 9; soldierMaxDamage = 12;
-                respawnInterval = 6f; deathExplosionDamage = 20;
+                respawnInterval = 6f; deathExplosionDamage = 20; soldierAttackInterval = 0.8f;
                 break;
             case 4:
                 soldierCount = 3; soldierHp = 280; soldierArmor = 15; soldierMinDamage = 14; soldierMaxDamage = 18;
-                respawnInterval = 5.5f; deathExplosionDamage = 30;
+                respawnInterval = 5.5f; deathExplosionDamage = 30; soldierAttackInterval = 0.7f;
                 break;
             case 5 when branch == TowerBranch.BranchA:
                 soldierCount = 2; soldierHp = 400; soldierArmor = 25; soldierMinDamage = 20; soldierMaxDamage = 26;
-                respawnInterval = 5f; deathExplosionDamage = 30;
+                respawnInterval = 5f; deathExplosionDamage = 30; soldierAttackInterval = 0.65f;
                 soldierColor = new Color(0.85f, 0.75f, 0.25f);
                 break;
             case 5 when branch == TowerBranch.BranchB:
                 soldierCount = 4; soldierHp = 150; soldierArmor = 5; soldierMinDamage = 28; soldierMaxDamage = 36;
-                respawnInterval = 4f; deathExplosionDamage = 15;
+                respawnInterval = 4f; deathExplosionDamage = 15; soldierAttackInterval = 0.5f;
                 soldierColor = new Color(0.35f, 0.35f, 0.45f);
                 break;
         }
@@ -168,7 +169,7 @@ public class BarracksTower : TowerBase
     {
         var offset = Random.insideUnitCircle * 0.35f;
         var spawnPos = rallyPoint + new Vector3(offset.x, offset.y, 0f);
-        var soldier = SoldierUnit.Spawn(this, spawnPos, soldierColor, soldierHp, soldierArmor, soldierMinDamage, soldierMaxDamage, 1f);
+        var soldier = SoldierUnit.Spawn(this, spawnPos, soldierColor, soldierHp, soldierArmor, soldierMinDamage, soldierMaxDamage, soldierAttackInterval);
         soldiers.Add(soldier);
     }
 
@@ -191,13 +192,19 @@ public class BarracksTower : TowerBase
             if (Vector2.Distance(enemy.transform.position, deathPosition) > 1.1f)
                 continue;
 
-            enemy.TakeDamage(deathExplosionDamage, DamageType.Physical);
+            enemy.TakeDamage(deathExplosionDamage, DamageType.Physical, damageSource: deathPosition);
         }
     }
 
     protected override void OnSold()
     {
         ClearSoldiers();
+    }
+
+    protected override void OnDestroy()
+    {
+        ClearSoldiers();
+        base.OnDestroy();
     }
 
     void ClearSoldiers()
